@@ -1,0 +1,126 @@
+.detailList {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 15px;
+  div:nth-child(2) {
+    flex: 1;
+    margin-left: 16px;
+  }
+
+  .dataIndex {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    color: #fff;
+    line-height: 20px;
+    text-align: center;
+    background-color: #314659;
+    border-radius: 50%;
+  }
+}
+
+.quotation-detail {
+  display: flex;
+  width: 100%;
+}
+
+.quotation-detail > div:nth-child(1) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-right: 15px;
+  color: #fff;
+  font-size: 40px;
+  background-color: #f56e53;
+  border-radius: 50%;
+}
+
+.quotation-detail > div.quotated {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-right: 15px;
+  color: #fff;
+  font-size: 40px;
+  background-color: #e6e6e6;
+  border-radius: 50%;
+}
+
+.quotation-detail > div:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+
+  .title {
+    margin-bottom: 10px;
+    color: rgba(0, 0, 0, 0.65);
+    font-size: 14px;
+  }
+
+  .count {
+    margin-bottom: 10px;
+    color: rgba(0, 0, 0, 0.85);
+    font-size: 18px;
+  }
+
+  .price {
+    color: #ff595b;
+    font-size: 18px;
+  }
+}
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.list-content {
+  height: 365px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.list-content::-webkit-scrollbar {
+  width: 5px;
+  border-radius: 2px;
+}
+.list-content::-webkit-scrollbar-track {
+  background: #f2f2f2;
+}
+.list-content::-webkit-scrollbar-thumb {
+  background: #5578f9;
+}
+.list-content::-webkit-scrollbar-thumb:hover {
+  background: #f2f2f2;
+}
+.list-content::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 0, 0, 0.2);
+}
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.active {
+  background: #eee;
+  border-left: 3px solid #5578f9;
+}
+.monitorStatic {
+  .ant-card-extra {
+    padding: 0;
+  }
+}
+.monitorList {
+  ul > li:hover {
+    background: #eee;
+    border-left: 3px solid #5578f9;
+  }
+}

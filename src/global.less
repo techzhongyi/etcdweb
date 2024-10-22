@@ -1,0 +1,230 @@
+@import '~antd/es/style/themes/default.less';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+// 页面右边content 头部 padding
+.ant-page-header {
+  padding: 4px 24px;
+}
+
+// .ant-pro-sider-logo {
+//   padding: 8px 16px;
+// }
+
+// .ant-pro-sider-light .ant-pro-sider-logo img {
+//   display: none;
+//   height: 28px;
+// }
+.ant-pro-sider-logo {
+  align-items: center;
+  justify-content: center;
+}
+// 字体颜色
+.ant-pro-sider-light .ant-pro-sider-logo h1 {
+  color: #fff;
+  line-height: 33px;
+  // margin: 0;
+}
+
+// 选中二级菜单字体的颜色
+.ant-pro-sider.ant-layout-sider-light .ant-menu-item a {
+  color: #6272a8 !important;
+}
+
+.ant-menu-item.ant-menu-item-only-child {
+  color: #fff !important;
+}
+.ant-menu-submenu-title:hover {
+  background: #212d57 !important;
+}
+
+.ant-menu-submenu:hover > .ant-menu-submenu-title > .ant-menu-title-content {
+  color: #fff !important;
+}
+// 点击二级菜单的时候的颜色
+.ant-pro-sider.ant-layout-sider-light .ant-menu-item:active,
+.ant-pro-sider.ant-layout-sider-light .ant-menu-submenu-title:active {
+  background: #fff !important;
+}
+
+// menu 字体的颜色
+.ant-menu-inline.ant-menu-root .ant-menu-submenu-title > * {
+  color: #6272a8 !important;
+}
+
+.anticon.anticon-crown {
+  color: #6272a8 !important;
+}
+
+.ant-menu-item.ant-menu-item-only-child.ant-pro-sider-collapsed-button {
+  color: #6272a8 !important;
+}
+
+// menu 选中字体的颜色
+.ant-menu-item-selected {
+  color: #fff !important;
+}
+
+// 鼠标hover 二级menu的背景色
+/* stylelint-disable-next-line no-duplicate-selectors */
+.ant-menu-light .ant-menu-item:hover,
+.ant-menu-light .ant-menu-item:hover {
+  background: #212d57 !important;
+}
+
+// 鼠标hover 二级字体的颜色
+.ant-menu-light .ant-menu-item:hover,
+.ant-pro-sider.ant-layout-sider-light .ant-menu-item a:hover {
+  color: #fff !important;
+}
+
+// 鼠标hover 箭头颜色
+.ant-menu-submenu:hover > .ant-menu-submenu-title > .ant-menu-submenu-arrow {
+  color: #fff !important;
+}
+
+// 二级menu选中颜色
+.ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected {
+  background: #212d57 !important;
+}
+// 二级菜单选中 一级菜单背景颜色
+// .ant-menu-submenu-selected .ant-menu-submenu-title{
+//   background: #212d57 !important;
+// }
+// .ant-menu-submenu-selected .ant-menu-submenu-title>.ant-menu-title-content{
+//   color: #fff !important;
+// }
+// 二级菜单选中 一级菜单箭头颜色
+// .ant-menu-submenu-selected .ant-menu-submenu-title>.ant-menu-submenu-arrow{
+//   color: #fff !important;
+// }
+
+// menu选中最左侧颜色
+.ant-menu-inline .ant-menu-item::after {
+  right: unset;
+  left: 0 !important;
+  border-left: 3px solid #5578f9 !important;
+}
+
+// 二级菜单往右偏
+.ant-menu-sub.ant-menu-inline > .ant-menu-item {
+  padding-left: 45px !important;
+}
+
+.colorWeak {
+  filter: invert(80%);
+}
+
+.ant-layout {
+  min-height: 100vh;
+}
+
+.ant-pro-sider.ant-layout-sider.ant-pro-sider-fixed {
+  left: unset;
+  background-color: #19223f;
+}
+.ant-pro-core-label-tip-icon {
+  color: #212d57 !important;
+}
+canvas {
+  display: block;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+// 全局class
+
+.ellipsis {
+  display: block !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  word-break: break-all !important;
+}
+
+.ellipsis_t {
+  display: block !important;
+  /* stylelint-disable-next-line declaration-block-no-duplicate-properties */
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  text-overflow: -o-ellipsis-lastline !important;
+  /* stylelint-disable-next-line declaration-block-no-duplicate-properties */
+  text-overflow: ellipsis !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+.ellipsis_three {
+  display: block !important;
+  /* stylelint-disable-next-line declaration-block-no-duplicate-properties */
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  text-overflow: -o-ellipsis-lastline !important;
+  /* stylelint-disable-next-line declaration-block-no-duplicate-properties */
+  text-overflow: ellipsis !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  -webkit-line-clamp: 3 !important;
+  line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+// .ant-menu-vertical .ant-menu-submenu{
+//   color: #fff!important;
+// }
+.ant-menu.ant-menu-inline-collapsed
+  > .ant-menu-submenu
+  > .ant-menu-submenu-title
+  .anticon {
+  color: #fff !important;
+}
+
+@media (max-width: @screen-xs) {
+  .ant-table {
+    width: 100%;
+    overflow-x: auto;
+    &-thead > tr,
+    &-tbody > tr {
+      > th,
+      > td {
+        white-space: pre;
+
+        > span {
+          display: block;
+        }
+      }
+    }
+  }
+}
+
+// Compatible with IE11
+@media screen and(-ms-high-contrast: active), (-ms-high-contrast: none) {
+  body .ant-design-pro > .ant-layout {
+    min-height: 100vh;
+  }
+}
+
+.ant-breadcrumb > span:last-child {
+  .ant-breadcrumb-link {
+    pointer-events: none;
+  }
+}
+.serve-pur-detail {
+  width: 75% !important;
+}

@@ -9,29 +9,26 @@ import {
   deleteAccount,
   editAccount,
   getAccountList,
-  lockAccount,
 } from '@/services/permissions/account';
-import ConfigAddOrEditModal from './components/addOrEditModal';
-import { configItemType } from '../data';
-import ComparesModal from './components/compareModal';
+import { versionsItemType } from '../data';
 const Index: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [pageSize, setPageSize] = useState<number>(10);
   const [visible, setVisible] = useState<boolean>(false);
   const [editId, setEditId] = useState<string | undefined>(undefined);
-  const [record, setRecord] = useState<configItemType | undefined>(undefined);
+  const [record, setRecord] = useState<versionsItemType | undefined>(undefined);
   const [visible1, setVisible1] = useState<boolean>(false);
   const [editId1, setEditId1] = useState<string | undefined>(undefined);
-  const [record1, setRecord1] = useState<configItemType | undefined>(undefined);
+  const [record1, setRecord1] = useState<versionsItemType | undefined>(undefined);
 
   // 新增 编辑 关闭Modal
-  const isShowModal = (show: boolean, row?: configItemType, id?: string) => {
+  const isShowModal = (show: boolean, row?: versionsItemType, id?: string) => {
     setVisible(show);
     setEditId(id);
     setRecord(row);
   };
   // 新增 编辑 关闭Modal
-  const isShowModal1 = (show: boolean, row?: configItemType, id?: string) => {
+  const isShowModal1 = (show: boolean, row?: versionsItemType, id?: string) => {
     setVisible1(show);
     setEditId1(id);
     setRecord1(row);
@@ -63,7 +60,7 @@ const Index: React.FC = () => {
   };
   // 提交
   const onFinish1 = async (value: any) => { };
-  const columns: ProColumns<configItemType>[] = [
+  const columns: ProColumns<versionsItemType>[] = [
     {
       title: '序号',
       align: 'center',
@@ -73,26 +70,44 @@ const Index: React.FC = () => {
       width: 60,
     },
     {
-      title: '服务名称',
+      title: '版本号',
       key: 'name',
       dataIndex: 'name',
       align: 'center',
-      hideInSearch: true,
     },
     {
-      title: '类型',
-      align: 'center',
-      dataIndex: 'user_name',
-      key: 'user_name',
-      hideInSearch: true,
-    },
-    {
-      title: '描述',
+      title: '更新描述',
       align: 'center',
       dataIndex: 'depart_name',
       key: 'depart_name',
       ellipsis: true,
       hideInSearch: true,
+    },
+    {
+      title: '类型',
+      dataIndex: 'healthy',
+      key: 'healthy',
+      hideInSearch: true,
+      align: 'center',
+      valueType: 'select',
+      valueEnum: {
+        '0': { text: '运行中', status: 'Success', },
+        '1': { text: '故障', status: 'Error', },
+        '2': { text: '失联', status: 'Default', },
+      }
+    },
+    {
+      title: '状态',
+      dataIndex: 'healthy',
+      key: 'healthy',
+      hideInSearch: true,
+      align: 'center',
+      valueType: 'select',
+      valueEnum: {
+        '0': { text: '运行中', status: 'Success', },
+        '1': { text: '故障', status: 'Error', },
+        '2': { text: '失联', status: 'Default', },
+      }
     },
     {
       title: '创建时间',
@@ -104,42 +119,45 @@ const Index: React.FC = () => {
       hideInSearch: true,
     },
     {
-      title: '更新时间',
-      align: 'center',
-      dataIndex: 'create_time',
-      key: 'create_time',
-      valueType: 'dateTime',
-      render: (_, row) => moment(row.create_time * 1000).format('YYYY-MM-DD'),
+      title: '日志',
+      key: 'option',
+      align: "center",
+      valueType: 'option',
       hideInSearch: true,
-    },
-    {
-      title: '操作人',
-      align: 'center',
-      dataIndex: 'depart_name',
-      key: 'depart_name',
-      ellipsis: true,
-      hideInSearch: true,
+      render: (text, record: versionsItemType) => [
+        <a >
+          查看
+        </a>,
+      ],
     },
     {
       title: '操作',
       align: 'center',
+      fixed: 'right',
       valueType: 'option',
       dataIndex: 'serve_type',
       key: 'option',
-      render: (text, record_: configItemType) => {
+      render: (text, record_: versionsItemType) => {
         return [
           <a
             onClick={() => {
               isShowModal(true, record_, record_.id);
             }}
           >
-            对比
+            升级
+          </a>,
+          <a
+            onClick={() => {
+              isShowModal(true, record_, record_.id);
+            }}
+          >
+            导入配置
           </a>,
         ];
       },
     },
   ];
-  // 获取列表
+  // 获取账号列表
   const getList = async (params: any) => {
     const param = {
       skip_root: 0,
@@ -174,7 +192,7 @@ const Index: React.FC = () => {
         breadcrumb: {},
       }}
     >
-      <ProTable<configItemType>
+      <ProTable<versionsItemType>
         bordered
         columns={columns}
         actionRef={actionRef}
@@ -187,7 +205,9 @@ const Index: React.FC = () => {
           persistenceType: 'localStorage',
         }}
         rowKey="id"
-        search={false}
+        search={{
+          labelWidth: 'auto',
+        }}
         pagination={{
           pageSize: pageSize,
           showSizeChanger: true,
@@ -197,7 +217,7 @@ const Index: React.FC = () => {
         }}
         options={false}
         dateFormatter="string"
-        headerTitle="配置列表"
+        headerTitle="版本列表"
         toolBarRender={() => [
           <Button
             type="primary"
@@ -205,35 +225,11 @@ const Index: React.FC = () => {
               isShowModal1(true);
             }}
           >
-            刷新
-          </Button>,
-          <Button
-            type="primary"
-            onClick={() => {
-              isShowModal1(true);
-            }}
-          >
-            提交
-          </Button>,
-          <Button
-            type="primary"
-            onClick={() => {
-              isShowModal1(true);
-            }}
-          >
-            应用
-          </Button>,
-          <Button
-            type="primary"
-            onClick={() => {
-              isShowModal1(true);
-            }}
-          >
-            发布生产
+            新增
           </Button>,
         ]}
       />
-      {!visible ? (
+      {/* {!visible ? (
         ''
       ) : (
         <ConfigAddOrEditModal
@@ -254,7 +250,7 @@ const Index: React.FC = () => {
           record={record}
           editId={editId}
         />
-      )}
+      )} */}
     </PageContainer>
   );
 };

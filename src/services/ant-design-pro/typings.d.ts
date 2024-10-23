@@ -64,6 +64,8 @@ declare namespace API {
   };
 
   type LoginParams = {
+    username?: string;
+    password?: string;
     phone?: string;
     code?: string;
   };

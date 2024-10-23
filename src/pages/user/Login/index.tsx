@@ -1,14 +1,13 @@
-import { SafetyCertificateFilled, UserOutlined } from '@ant-design/icons';
+import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, message } from 'antd';
 import React, { useState } from 'react';
-import { LoginForm, ProFormCaptcha, ProFormText } from '@ant-design/pro-form';
+import { LoginForm, ProFormText } from '@ant-design/pro-form';
 import { history, useModel } from 'umi';
-import { getsms, login } from '@/services/login/login';
+import { login } from '@/services/login/login';
 import './index.less';
 import { setStorage } from '@/utils/storage';
-import Help from '@/utils/help';
 import loginLogo from '../../../../public/icons/loginLogo.png';
-let enterPath = '/configManage';
+let enterPath = '/home';
 const LoginMessage: React.FC<{
   content: string;
 }> = ({ content }) => (
@@ -30,12 +29,14 @@ const Login: React.FC = () => {
   let currentAccess: any;
   const fetchUserInfo = async (data: any) => {
     if (data) {
-      const { access } = data;
+      const array: { label: any; value: any }[] = [];
+      data.env.map(item => {
+        array.push({ label: item.value, value: item.name });
+      })
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      currentAccess = access;
       await setInitialState((s) => ({
         ...s,
-        currentUser: data,
+        currentUser: {...data,extraArray: array,defaultEnv: array[0].value},
       }));
     }
   };
@@ -44,18 +45,18 @@ const Login: React.FC = () => {
     try {
       // 登录
       const {
-        data: { token },
-        extra,
+        data: { token,extra },
         status,
         msg,
       } = await login({ ...values });
       if (status === 0) {
         message.success('登录成功！');
         setStorage('token', token);
-        setStorage('p_secret', values.code);
+        setStorage('p_secret', values.password);
         // setStorage('user_info', data.__user_info__);
-        setStorage('user_info', extra);
-        await fetchUserInfo({ name: extra.name, access: values.phone });
+        // setStorage('user_info', {name: values.username});
+        setStorage('user_info', extra)
+        await fetchUserInfo(extra);
         // console.log(userInfo)
         /** 此方法会跳转到 redirect 参数所在的位置 */
         if (!history) return;
@@ -92,76 +93,37 @@ const Login: React.FC = () => {
             {userLoginState != 0 && <LoginMessage content={userLoginMsg} />}
             {
               <>
-                <ProFormText
-                  className="phoneInput"
-                  fieldProps={{
-                    autoFocus: true,
-                    size: 'large',
-                    maxLength: 11,
-                    prefix: <UserOutlined />,
-                  }}
-                  name="phone"
-                  placeholder="账号"
-                  rules={[
-                    {
-                      required: true,
-                      message: '请输入账号！',
-                    },
-                    {
-                      pattern: Help.Regular.mobilePhone,
-                      message: '请输入正确的手机号码！',
-                    },
-                  ]}
-                />
-                <ProFormCaptcha
-                  fieldProps={{
-                    maxLength: 6,
-                    size: 'large',
-                    prefix: <SafetyCertificateFilled className="prefixIcon" />,
-                  }}
-                  captchaProps={{
-                    size: 'large',
-                    style: {
-                      background: '#20A395',
-                      color: '#fff',
-                    },
-                  }}
-                  phoneName="phone"
-                  placeholder="请输入密码"
-                  captchaTextRender={(timing, count) => {
-                    if (timing) {
-                      return `${count}s`;
-                    }
-                    return '获取验证码';
-                  }}
-                  name="code"
-                  rules={[
-                    {
-                      required: true,
-                      message: '请输入验证码！',
-                    },
-                    {
-                      min: 6,
-                      message: '请输入6位验证码',
-                    },
-                    {
-                      max: 6,
-                      message: '请输入6位验证码',
-                    },
-                  ]}
-                  onGetCaptcha={async (phone) => {
-                    const { status, msg } = await getsms({
-                      mobile_number: phone,
-                      account_type: 2,
-                    });
-                    if (status === 0) {
-                      message.success('获取验证码成功！');
-                    } else {
-                      message.error(msg);
-                      throw new Error(msg);
-                    }
-                  }}
-                />
+                 <ProFormText
+                    className="phoneInput"
+                    fieldProps={{
+                      autoFocus: true,
+                      size: 'large',
+                      prefix: <UserOutlined />,
+                    }}
+                    name="username"
+                    placeholder="账号"
+                    rules={[
+                      {
+                        required: true,
+                        message: '请输入账号！',
+                      }
+                    ]}
+                  />
+                <ProFormText.Password
+                    placeholder="密码"
+                    fieldProps={{
+                      size: 'large',
+                      prefix: <LockOutlined/>,
+                    }}
+                    rules={[
+                      {
+                        required: true,
+                        message: '请输入密码！',
+                      },
+                    ]}
+                    width="md"
+                    name="password"
+                  />
               </>
             }
           </LoginForm>

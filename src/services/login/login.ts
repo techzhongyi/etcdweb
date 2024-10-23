@@ -1,12 +1,12 @@
 import request from '@/utils/request';
 
-/** 登录接口 POST /user/admin/login */
+/** 登录接口 POST /devopsCore/login */
 export async function login(
   body: API.LoginParams,
   options?: Record<string, any>,
 ) {
   const data = 'p=' + encodeURIComponent(JSON.stringify(body));
-  return request<API.LoginResult>('/user/service_site/login', {
+  return request<API.LoginResult>('/devopsCore/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',

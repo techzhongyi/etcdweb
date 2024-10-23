@@ -1,18 +1,21 @@
-import { Space } from 'antd';
+import { Select, Space } from 'antd';
 // import { QuestionCircleOutlined } from '@ant-design/icons';
-import React from 'react';
+import React,{ useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import NoticeIconView from '../NoticeIcon';
 import Avatar from './AvatarDropdown';
 // import HeaderSearch from '../HeaderSearch';
 import styles from './index.less';
 import LoginOut from './LoginOut';
-
 export type SiderTheme = 'light' | 'dark';
-
+import { setStorage, getStorage, clearStorage } from '@/utils/storage';
 const GlobalHeaderRight: React.FC = () => {
   const { initialState } = useModel('@@initialState');
-
+  const {envs, setEnvs } = useModel('model')
+  const { extraArray, defaultEnv } = initialState.currentUser
+  useEffect( () => {
+    setEnvs(defaultEnv)
+  },[defaultEnv])
   if (!initialState || !initialState.settings) {
     return null;
   }
@@ -22,6 +25,10 @@ const GlobalHeaderRight: React.FC = () => {
 
   if ((navTheme === 'dark' && layout === 'top') || layout === 'mix') {
     className = `${styles.right}  ${styles.dark}`;
+  }
+  const envChange = (e) => {
+    setStorage('env', e)
+    setEnvs(e)
   }
   return (
     <Space className={className}>
@@ -57,6 +64,15 @@ const GlobalHeaderRight: React.FC = () => {
         <QuestionCircleOutlined />
       </span> */}
       {/* <NoticeIconView /> */}
+      <div>
+              <Select
+                defaultValue={envs}
+                style={{ width: 200 }}
+                onChange={(e) => { envChange(e) }}
+                options={extraArray}
+              />
+              {}
+            </div>
       <Avatar />
       <LoginOut />
       {/* <SelectLang className={styles.action} /> */}

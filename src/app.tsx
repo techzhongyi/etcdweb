@@ -87,9 +87,13 @@ export async function getInitialState(): Promise<{
 
   if (history.location.pathname !== loginPath) {
     const currentUser = await fetchUserInfo();
+    const array: { label: any; value: any }[] = [];
+    currentUser.env.map(item => {
+      array.push({ label: item.value, value: item.name });
+    })
     return {
       fetchUserInfo,
-      currentUser,
+      currentUser: {...currentUser,extraArray: array,defaultEnv: array[0].value},
       settings: {},
     };
   }

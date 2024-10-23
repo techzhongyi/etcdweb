@@ -20,122 +20,60 @@
       },
     ],
   },
-  // {
-  //   path: '/home',
-  //   name: '概览',
-  //   icon: 'FundProjectionScreenOutlined',
-  //   routes: [
-  //     {
-  //       path: '/home/overview',
-  //       name: '系统概览',
-  //       component: './Dashboard',
-  //     },
-  //     {
-  //       path: '/home/dataScreen',
-  //       name: '数据大屏',
-  //       layout: false,
-  //       component: './dataScreen',
-  //     },
-  //     {
-  //       path: '/home/totalDataScreen',
-  //       name: '系统大屏',
-  //       layout: false,
-  //       component: './totalDataScreen',
-  //     },
-  //     { path: '/home', redirect: '/home/overview' },
-  //   ],
-  // },
-
+  {
+    path: '/home',
+    name: '首页',
+    icon: 'FundProjectionScreenOutlined',
+    component: './home',
+  },
+  {
+    path: '/versions',
+    name: '版本管理',
+    icon: 'SolutionOutlined',
+    routes: [
+      {
+        path: '/versions/list',
+        name: '版本列表',
+        component: './versions/list',
+      },
+      { path: '/versions', redirect: '/versions/list' },
+    ],
+  },
+  {
+    path: '/serviceConfig',
+    name: '全部服务',
+    icon: 'FundProjectionScreenOutlined',
+    component: './serviceConfig',
+  },
   {
     path: '/configManage',
-    name: '配置管理',
+    name: '服务管理',
     icon: 'SolutionOutlined',
     routes: [
       {
         path: '/configManage/upgrades',
-        name: '待升级配置',
+        name: '待升级服务',
         component: './configManage/upgrades',
       },
-      // {
-      //   path: '/workOrder/status',
-      //   name: '工单状态',
-      //   component: './workOrder/workStatus',
-      //   hideInMenu: true,
-      // },
-      // {
-      //   path: '/workOrder/localstatus',
-      //   name: '工单状态',
-      //   component: './workOrder/localWorkStatus',
-      //   hideInMenu: true,
-      // },
+
       { path: '/configManage', redirect: '/configManage/upgrades' },
     ],
   },
-  // {
-  //   path: '/serviceProviders',
-  //   name: '供应商管理',
-  //   icon: 'ReconciliationOutlined',
-  //   routes: [
-  //     {
-  //       path: '/serviceProviders/repairShop',
-  //       name: '修理厂供应商管理',
-  //       component: './serviceProviders/repairShop/list',
-  //     },
-  //     {
-  //       path: '/serviceProviders/gpsShop',
-  //       name: '定位设备供应商管理',
-  //       component: './serviceProviders/gpsShop/list',
-  //     },
-  //     { path: '/serviceProviders', redirect: '/serviceProviders/repairShop' },
-  //   ],
-  // },
-  // {
-  //   path: '/permissions',
-  //   name: '系统管理',
-  //   icon: 'SettingOutlined',
-  //   routes: [
-  //     {
-  //       path: '/permissions/category',
-  //       name: '类别管理',
-  //       component: './permissions/category/list',
-  //     },
-  //     {
-  //       path: '/permissions/tag',
-  //       name: '标签管理',
-  //       component: './permissions/tag/list',
-  //     },
-  //     {
-  //       path: '/permissions/thresholdAlarm',
-  //       name: '阈值报警配置',
-  //       component: './permissions/thresholdAlarm/list',
-  //       hideInMenu: true,
-  //     },
-  //     {
-  //       path: '/permissions/organization',
-  //       name: '组织管理',
-  //       component: './permissions/organization/list',
-  //     },
-  //     {
-  //       path: '/permissions/user',
-  //       name: '用户管理',
-  //       component: './permissions/user',
-  //     },
-  //     {
-  //       path: '/permissions/account',
-  //       name: '账号管理',
-  //       component: './permissions/account',
-  //     },
-  //     {
-  //       path: '/permissions/role',
-  //       name: '角色管理',
-  //       component: './permissions/role',
-  //     },
-  //     { path: '/permissions', redirect: '/permissions/role' },
-  //   ],
-  // },
+  {
+    path: '/env',
+    name: 'ENV配置',
+    icon: 'FundProjectionScreenOutlined',
+    component: './envConfig',
+  },
+  {
+    path: '/log',
+    name: '服务日志',
+    icon: 'FundProjectionScreenOutlined',
+    component: './log',
+  },
   {
     path: '/',
-    redirect: '/configManage',
+    redirect: '/home',
   },
   {
     component: './404',

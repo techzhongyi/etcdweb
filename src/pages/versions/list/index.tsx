@@ -6,11 +6,11 @@ import { Button, message, Popconfirm } from 'antd';
 import moment from 'moment';
 import {
   addAccount,
-  deleteAccount,
   editAccount,
   getAccountList,
 } from '@/services/permissions/account';
 import { versionsItemType } from '../data';
+import VersionAddOrEditModal from '../components/addOrEditModal';
 const Index: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [pageSize, setPageSize] = useState<number>(10);
@@ -125,7 +125,9 @@ const Index: React.FC = () => {
       valueType: 'option',
       hideInSearch: true,
       render: (text, record: versionsItemType) => [
-        <a >
+        <a  onClick={() => {
+          isShowModal1(true, record_, record_.id);
+        }}>
           查看
         </a>,
       ],
@@ -222,17 +224,17 @@ const Index: React.FC = () => {
           <Button
             type="primary"
             onClick={() => {
-              isShowModal1(true);
+              isShowModal(true);
             }}
           >
             新增
           </Button>,
         ]}
       />
-      {/* {!visible ? (
+      {!visible ? (
         ''
       ) : (
-        <ConfigAddOrEditModal
+        <VersionAddOrEditModal
           visible={visible}
           isShowModal={isShowModal}
           onFinish={onFinish}
@@ -240,7 +242,7 @@ const Index: React.FC = () => {
           editId={editId}
         />
       )}
-      {!visible1 ? (
+      {/*{!visible1 ? (
         ''
       ) : (
         <ComparesModal

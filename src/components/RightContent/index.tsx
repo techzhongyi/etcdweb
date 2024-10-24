@@ -8,11 +8,12 @@ import Avatar from './AvatarDropdown';
 import styles from './index.less';
 import LoginOut from './LoginOut';
 export type SiderTheme = 'light' | 'dark';
-import { setStorage, getStorage, clearStorage } from '@/utils/storage';
+import { setStorage, getStorage } from '@/utils/storage';
 const GlobalHeaderRight: React.FC = () => {
   const { initialState } = useModel('@@initialState');
   const {envs, setEnvs } = useModel('model')
   const { extraArray, defaultEnv } = initialState.currentUser
+  const [initDefaultEnv,setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
   useEffect( () => {
     setEnvs(defaultEnv)
   },[defaultEnv])
@@ -28,6 +29,7 @@ const GlobalHeaderRight: React.FC = () => {
   }
   const envChange = (e) => {
     setStorage('env', e)
+    setInitDefaultEnv(e)
     setEnvs(e)
   }
   return (
@@ -66,7 +68,7 @@ const GlobalHeaderRight: React.FC = () => {
       {/* <NoticeIconView /> */}
       <div>
               <Select
-                defaultValue={envs}
+                defaultValue={initDefaultEnv}
                 style={{ width: 200 }}
                 onChange={(e) => { envChange(e) }}
                 options={extraArray}

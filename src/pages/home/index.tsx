@@ -7,6 +7,7 @@ import moment from 'moment';
 import './index.less'
 import { webSocket } from '@/utils/socket';
 import { useModel } from 'umi';
+import { setStorage, getStorage } from '@/utils/storage';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -127,7 +128,7 @@ const Index: React.FC = () => {
   // 发送请求
   const setWebShh = async () => {
     const data = {
-      env: envs || 'Dev'
+      env: envs || getStorage('env')
     }
     console.log(envs)
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -140,6 +141,7 @@ const Index: React.FC = () => {
       longstart();
       if (typeof (recv.data) === 'string') {
         if (recv.data == 'pong' || recv.data == 'null') {
+          setDataList([])
           return
         }
         const data_ = JSON.parse(recv.data);
@@ -172,9 +174,6 @@ const Index: React.FC = () => {
       }
   };
   }, [])
-  useEffect(() => {
-    console.log('envshome',envs)
-  }, [envs])
   return (
     <PageContainer
       ghost

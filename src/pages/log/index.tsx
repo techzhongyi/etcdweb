@@ -2,15 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import { Card, Select } from 'antd';
+import { Card } from 'antd';
 import './index.less'
-
+import { getServiceListAPI } from '@/services/comservice';
+import { useModel } from 'umi';
+import { getStorage } from '@/utils/storage';
+import { getLogsinfluxListAPI } from '@/services/log';
 const Index: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [pageSize, setPageSize] = useState<number>(10);
-  const serviceChange = (e) => {
-
-  }
+  const { envs, setEnvs } = useModel('model')
+  const [servicesList, setServicesList] = useState([])
+  const [activeIndex,setActiveIndex] = useState('')
+  const [sname,setSname] =  useState('')
   const columns: ProColumns<any>[] = [
     {
       title: '序号',
@@ -32,6 +36,7 @@ const Index: React.FC = () => {
       align: 'center',
       dataIndex: 'user_name',
       key: 'user_name',
+      hideInSearch: true,
     },
     {
       title: 'NODE',
@@ -47,36 +52,56 @@ const Index: React.FC = () => {
       key: 'depart_name',
       ellipsis: true,
     },
+    {
+      title: '时间范围',
+      key: 'range_time',
+      dataIndex: 'range_time',
+      align: 'center',
+      valueType: 'dateRange',
+      hideInTable: true,
+    },
   ];
   // 获取列表
-  const getList = async (params: any) => {
+  const getList = async (params: any, sname: string) => {
+    if(!sname){
+      return
+    }
     const param = {
-      skip_root: 0,
-      $tableLimit: {
-        page: params.current,
-        count: params.pageSize,
-      },
-      $tableSearch: [
-        {
-          field: 'phone',
-          value: params.phone ? params.phone : '__ignore__',
-          op: 7,
-        },
-      ],
-      $tableSort: [],
+      page: params.current,
+      count: params.pageSize,
+      sname,
+      env: envs || getStorage('env'),
+      level:params.level?params.level:'',
+      type:params.type?params.type:'',
+      node:params.node?params.node:'',
+      start:params.range_time ? new Date((params.range_time[0] + ' ' + '00:00:00')).getTime() / 1000 : null,
+      end: params.range_time ? new Date((params.range_time[1] + ' ' + '23:59:59')).getTime() / 1000 : null,
     };
-    // const {
-    //   data: { list, total },
-    //   status,
-    // } = await getAccountList(param);
-    // return {
-    //   data: list,
-    //   total: total,
-    //   success: status === 0,
-    // };
+    const {
+      data: { list, total },
+      status,
+    } = await getLogsinfluxListAPI(param);
+    return {
+      data: list,
+      total: total,
+      success: status === 0,
+    };
   };
+  const getServiceList = async () => {
+    const param = {
+      env: envs || getStorage('env')
+    }
+    const { data: { items } } = await getServiceListAPI(param)
+    setServicesList(items)
+  }
   useEffect(() => {
+    getServiceList()
   }, [])
+  const selectSevices = (e) => {
+    setActiveIndex(e)
+    setSname(e)
+    getList({current:1, pageSize:10}, e)
+  }
   return (
     <PageContainer
       ghost
@@ -88,36 +113,17 @@ const Index: React.FC = () => {
       <Card>
         <div className='log-content'>
           <div className='log-list-select'>
-            <div>
-              <Select
-                defaultValue=""
-                style={{ width: 200 }}
-                onChange={(e) => { serviceChange(e) }}
-                options={[
-                  {
-                    value: '',
-                    label: '微服务',
-                  },
-                  {
-                    value: '1',
-                    label: '微服务1',
-                  },
-                  {
-                    value: '2',
-                    label: '微服务2',
-                  },
-                  {
-                    value: '3',
-                    label: '微服务3',
-                  },
-                ]}
-              />
-            </div>
+            <div className='log-content-title'>微服务列表</div>
             <div className='log-item-list'>
-              <div>hcore</div>
-              <div>pcore</div>
-              <div>user</div>
-              <div>assets</div>
+              {
+                servicesList.map(item => {
+                  return (
+                    <div className={activeIndex === item?'item-active':''} onClick={() => {
+                      selectSevices(item)
+                    }}>{item}</div>
+                  )
+                })
+              }
             </div>
 
           </div>
@@ -126,7 +132,7 @@ const Index: React.FC = () => {
               bordered
               columns={columns}
               actionRef={actionRef}
-              request={(params) => getList(params)}
+              request={(params) => getList(params,sname)}
               editable={{
                 type: 'multiple',
               }}

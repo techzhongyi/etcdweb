@@ -12,7 +12,10 @@ import { setStorage, getStorage } from '@/utils/storage';
 const GlobalHeaderRight: React.FC = () => {
   const { initialState } = useModel('@@initialState');
   const {envs, setEnvs } = useModel('model')
-  const { extraArray, defaultEnv } = initialState.currentUser
+  if(!initialState){
+    return null
+  }
+  const { extraArray, defaultEnv } = initialState?.currentUser
   const [initDefaultEnv,setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
   useEffect( () => {
     setEnvs(defaultEnv)

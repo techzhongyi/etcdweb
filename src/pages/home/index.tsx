@@ -7,7 +7,7 @@ import moment from 'moment';
 import './index.less'
 import { webSocket } from '@/utils/socket';
 import { useModel } from 'umi';
-import { setStorage, getStorage } from '@/utils/storage';
+import { getStorage } from '@/utils/storage';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;

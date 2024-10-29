@@ -5,16 +5,16 @@ import ProTable from '@ant-design/pro-table';
 import { Card } from 'antd';
 import './index.less'
 import { getServiceListAPI } from '@/services/comservice';
-import { useModel } from 'umi';
 import { getStorage } from '@/utils/storage';
 import { getLogsinfluxListAPI } from '@/services/log';
+import eventBus from '@/utils/eventBus';
 const Index: React.FC = () => {
   const actionRef = useRef<ActionType>();
+  const formRef = useRef();
   const [pageSize, setPageSize] = useState<number>(10);
-  const { envs, setEnvs } = useModel('model')
   const [servicesList, setServicesList] = useState([])
-  const [activeIndex,setActiveIndex] = useState('')
-  const [sname,setSname] =  useState('')
+  const [activeIndex, setActiveIndex] = useState('')
+  const [sname, setSname] = useState('')
   const columns: ProColumns<any>[] = [
     {
       title: '序号',
@@ -26,30 +26,30 @@ const Index: React.FC = () => {
     },
     {
       title: '时间',
-      key: 'name',
-      dataIndex: 'name',
+      key: 'logtime',
+      dataIndex: 'logtime',
       align: 'center',
       hideInSearch: true,
     },
     {
       title: '内容',
       align: 'center',
-      dataIndex: 'user_name',
-      key: 'user_name',
+      dataIndex: 'msg',
+      key: 'msg',
       hideInSearch: true,
     },
     {
       title: 'NODE',
       align: 'center',
-      dataIndex: 'depart_name',
-      key: 'depart_name',
+      dataIndex: 'node',
+      key: 'node',
       ellipsis: true,
     },
     {
       title: 'LEVEL',
       align: 'center',
-      dataIndex: 'depart_name',
-      key: 'depart_name',
+      dataIndex: 'level',
+      key: 'level',
       ellipsis: true,
     },
     {
@@ -63,19 +63,16 @@ const Index: React.FC = () => {
   ];
   // 获取列表
   const getList = async (params: any, sname: string) => {
-    if(!sname){
-      return
-    }
     const param = {
       page: params.current,
       count: params.pageSize,
       sname,
-      env: envs || getStorage('env'),
-      level:params.level?params.level:'',
-      type:params.type?params.type:'',
-      node:params.node?params.node:'',
-      start:params.range_time ? new Date((params.range_time[0] + ' ' + '00:00:00')).getTime() / 1000 : null,
-      end: params.range_time ? new Date((params.range_time[1] + ' ' + '23:59:59')).getTime() / 1000 : null,
+      env: getStorage('env'),
+      level: params.level ? params.level : '',
+      type: params.type ? params.type : '',
+      node: params.node ? params.node : '',
+      start: params.range_time ? new Date((params.range_time[0] + ' ' + '00:00:00')).getTime() / 1000 : 0,
+      end: params.range_time ? new Date((params.range_time[1] + ' ' + '23:59:59')).getTime() / 1000 : 0,
     };
     const {
       data: { list, total },
@@ -87,20 +84,32 @@ const Index: React.FC = () => {
       success: status === 0,
     };
   };
-  const getServiceList = async () => {
+  const getServiceList = async (env) => {
     const param = {
-      env: envs || getStorage('env')
+      env: env ? env : getStorage('env')
     }
+    console.log(env)
     const { data: { items } } = await getServiceListAPI(param)
     setServicesList(items)
   }
+  const handleEvent = (env) => {
+    setActiveIndex('')
+    setSname('')
+    getServiceList(env)
+    formRef?.current?.submit();
+  }
   useEffect(() => {
-    getServiceList()
+    getServiceList(getStorage('env'))
+    eventBus.on('envChange', (env) => { handleEvent(env) });
+    return () => {
+      eventBus.off('envChange', handleEvent);
+    }
   }, [])
   const selectSevices = (e) => {
     setActiveIndex(e)
     setSname(e)
-    getList({current:1, pageSize:10}, e)
+    getList({ current: 1, pageSize: 10 }, e)
+    formRef?.current?.submit();
   }
   return (
     <PageContainer
@@ -118,7 +127,7 @@ const Index: React.FC = () => {
               {
                 servicesList.map(item => {
                   return (
-                    <div className={activeIndex === item?'item-active':''} onClick={() => {
+                    <div className={activeIndex === item ? 'item-active' : ''} onClick={() => {
                       selectSevices(item)
                     }}>{item}</div>
                   )
@@ -128,34 +137,35 @@ const Index: React.FC = () => {
 
           </div>
           <div className='log-select-content'>
-            <ProTable<any>
-              bordered
-              columns={columns}
-              actionRef={actionRef}
-              request={(params) => getList(params,sname)}
-              editable={{
-                type: 'multiple',
-              }}
-              columnsState={{
-                persistenceKey: 'pro-table-singe-demos',
-                persistenceType: 'localStorage',
-              }}
-              rowKey="id"
-              search={{
-                labelWidth: 'auto',
-              }}
-              pagination={{
-                pageSize: pageSize,
-                showSizeChanger: true,
-                onShowSizeChange: (current, pageSize) => {
-                  setPageSize(pageSize);
-                },
-              }}
-              options={false}
-              dateFormatter="string"
-              headerTitle={false}
-              toolBarRender={false}
-            />
+          <ProTable<any>
+            bordered
+            columns={columns}
+            actionRef={actionRef}
+            formRef={formRef}
+            request={(params) => getList(params, sname)}
+            editable={{
+              type: 'multiple',
+            }}
+            columnsState={{
+              persistenceKey: 'pro-table-singe-demos',
+              persistenceType: 'localStorage',
+            }}
+            rowKey="id"
+            search={{
+              labelWidth: 'auto',
+            }}
+            pagination={{
+              pageSize: pageSize,
+              showSizeChanger: true,
+              onShowSizeChange: (current, pageSize) => {
+                setPageSize(pageSize);
+              },
+            }}
+            options={false}
+            dateFormatter="string"
+            headerTitle={false}
+            toolBarRender={false}
+          />
           </div>
         </div>
       </Card>

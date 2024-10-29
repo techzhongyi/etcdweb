@@ -9,6 +9,7 @@ import styles from './index.less';
 import LoginOut from './LoginOut';
 export type SiderTheme = 'light' | 'dark';
 import { setStorage, getStorage } from '@/utils/storage';
+import eventBus from '@/utils/eventBus';
 const GlobalHeaderRight: React.FC = () => {
   const { initialState } = useModel('@@initialState');
   const {envs, setEnvs } = useModel('model')
@@ -18,7 +19,8 @@ const GlobalHeaderRight: React.FC = () => {
   const { extraArray, defaultEnv } = initialState?.currentUser
   const [initDefaultEnv,setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
   useEffect( () => {
-    setEnvs(defaultEnv)
+    // setEnvs(defaultEnv)
+    eventBus.emit('envChange', defaultEnv);
   },[defaultEnv])
   if (!initialState || !initialState.settings) {
     return null;
@@ -33,7 +35,8 @@ const GlobalHeaderRight: React.FC = () => {
   const envChange = (e) => {
     setStorage('env', e)
     setInitDefaultEnv(e)
-    setEnvs(e)
+    // setEnvs(e)
+    eventBus.emit('envChange', e);
   }
   return (
     <Space className={className}>

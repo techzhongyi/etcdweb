@@ -22,13 +22,14 @@ interface CodeMirrorEditorProps {
   height?: Number;
   width?: Number;
   onChange: (value: string) => void;
+  onBeforeChange?: (value: string) => void;
   onShiftEnter?: () => void;
   onBlur?: (value: string) => void;
   onChangeLine?: () => void;
 }
 
 const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
-  const { language } = props;
+  const { language, value } = props;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<EditorFromTextArea>();
 
@@ -57,12 +58,14 @@ const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
     if (!textarea) return;
     registerHelp(); // 注册代码提示
     initCodeMirror();
-
     return () => {
       // 清理和销毁编辑器实例
       editorRef.current?.toTextArea();
     };
   }, []);
+  useEffect(() => {
+    editorRef.current?.setValue(value || '');
+  },[value])
 
   const initCodeMirror = () => {
     const editorConfig = {
@@ -81,7 +84,6 @@ const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
       textareaRef.current!,
       editorConfig,
     );
-
     // 监听编辑器内容变化事件
     editorRef.current.on('change', codemirrorValueChange);
     editorRef.current.on('keydown', keydown);
@@ -119,12 +121,12 @@ const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
         doc.removeLineClass(line, 'wrap', 'notes');
       }
     });
-    // 判断是输入择匹配出提示代码
-    // if (change.origin === '+input') {
-    //     CodeMirror.commands.autocomplete(editorRef.current, undefined, {
-    //         completeSingle: false,
-    //     });
-    // }
+    // // 判断是输入择匹配出提示代码
+    // // if (change.origin === '+input') {
+    // //     CodeMirror.commands.autocomplete(editorRef.current, undefined, {
+    // //         completeSingle: false,
+    // //     });
+    // // }
     if (change.origin !== 'setValue') {
       if (props.onChange) {
         props.onChange(doc.getValue());

@@ -1,31 +1,78 @@
 import React, { useEffect, useState } from 'react';
 import { FooterToolbar, PageContainer } from '@ant-design/pro-layout';
-import { Button, Card, Select } from 'antd';
+import { Button, Card, message } from 'antd';
 import './index.less'
 import CodeMirrorEditorModal from '@/components/CodeMirror';
 import { ProForm } from '@ant-design/pro-components';
-
+import { getServiceListAPI } from '@/services/comservice';
+import { getStorage } from '@/utils/storage';
+import eventBus from '@/utils/eventBus';
+import { editEnvConfigAPI, getEnvConfigListAPI } from '@/services/envConfig';
+let newCode = ''
 const Index: React.FC = () => {
   const [formObj] = ProForm.useForm();
-  const [code, setCode] = useState(`
-  import java.util.*;
-  import com.alibaba.fastjson.JSON;
-  import com.alibaba.fastjson.JSONArray;
-  import com.alibaba.fastjson.JSONObject;
-  import com.alibaba.fastjson.TypeReference;
-  `);
+  const [servicesList, setServicesList] = useState([])
+  const [activeIndex, setActiveIndex] = useState('')
+  const [sname, setSname] = useState('');
+  const [code, setCode] = useState('');
+  const [count, setCount] = useState(1);
   const handleCodeChange = (value: string) => {
-    setCode(value);
-    console.log(value);
+    setCount(2)
+    newCode = value
   };
-  const onFinish = () => {
 
+  const onFinish = async () => {
+    if(count == 1){
+      return
+    }
+    const param = {
+      env: getStorage('env'),
+      sname,
+      envs: newCode
+    }
+    console.log(param)
+    const {status, msg } = await editEnvConfigAPI(param)
+    if (status === 0) {
+      message.success('修改成功')
+    } else {
+      message.warning(msg)
+    }
   }
-  const serviceChange = (e) => {
-
+  // 获取envConfig
+  const getEnvConfig = async (name: string) => {
+    const param = {
+      env: getStorage('env'),
+      sname: name
+    }
+    const { data: { envs } } = await getEnvConfigListAPI(param)
+    setCode(envs)
+  }
+  // 获取微服务列表
+  const getServiceList = async (env) => {
+    const param = {
+      env: env ? env : getStorage('env')
+    }
+    console.log(env)
+    const { data: { items } } = await getServiceListAPI(param)
+    setServicesList(items)
+  }
+  const handleEvent = (env) => {
+    setActiveIndex('')
+    getServiceList(env)
   }
   useEffect(() => {
+    getServiceList(getStorage('env'))
+    eventBus.on('envChange', (env) => { handleEvent(env) });
+    return () => {
+      eventBus.off('envChange', handleEvent);
+    }
   }, [])
+  const selectSevices = (e) => {
+    setActiveIndex(e)
+    setSname(e)
+    getEnvConfig(e)
+  }
+
   return (
     <PageContainer
       ghost
@@ -62,36 +109,17 @@ const Index: React.FC = () => {
         <Card title='ENV配置' style={{ marginBottom: '20px' }}>
           <div className='env-content'>
             <div className='env-list-select'>
-              <div>
-                <Select
-                  defaultValue=""
-                  style={{ width: 200 }}
-                  onChange={(e) => { serviceChange(e) }}
-                  options={[
-                    {
-                      value: '',
-                      label: '微服务',
-                    },
-                    {
-                      value: '1',
-                      label: '微服务1',
-                    },
-                    {
-                      value: '2',
-                      label: '微服务2',
-                    },
-                    {
-                      value: '3',
-                      label: '微服务3',
-                    },
-                  ]}
-                />
-              </div>
+              <div className='env-content-title'>微服务列表</div>
               <div className='env-item-list'>
-                <div>hcore</div>
-                <div>pcore</div>
-                <div>user</div>
-                <div>assets</div>
+                {
+                  servicesList.map(item => {
+                    return (
+                      <div className={activeIndex === item ? 'item-active' : ''} onClick={() => {
+                        selectSevices(item)
+                      }}>{item}</div>
+                    )
+                  })
+                }
               </div>
 
             </div>

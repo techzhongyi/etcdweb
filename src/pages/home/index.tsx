@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import {Input, Card } from 'antd';
+import { Input, Card } from 'antd';
 import moment from 'moment';
 import './index.less'
 import { webSocket } from '@/utils/socket';
@@ -15,7 +15,7 @@ const Index: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [pageSize, setPageSize] = useState<number>(10);
   const [dataList, setDataList] = useState([])
-  const {envs, setEnvs } = useModel('model')
+  const { envs, setEnvs } = useModel('model')
   const columns: ProColumns<any>[] = [
     {
       title: '序号',
@@ -126,9 +126,9 @@ const Index: React.FC = () => {
     }, 3000);
   };
   // 发送请求
-  const setWebShh = async () => {
+  const setWebShh = async (env?) => {
     const data = {
-      env: envs || getStorage('env')
+      env: env ? env : getStorage('env')
     }
     console.log(envs)
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -158,21 +158,27 @@ const Index: React.FC = () => {
     }
   };
   // 获取初始数据
-//   useEffect(() => {
-//     eventBus.on('env', (env) => { handleEvent(env) });
-//     return () => {
-//         eventBus.off('env', handleEvent);
-//     }
-// }, []);
+  //   useEffect(() => {
+  //     eventBus.on('env', (env) => { handleEvent(env) });
+  //     return () => {
+  //         eventBus.off('env', handleEvent);
+  //     }
+  // }, []);
+  const handleEvent = (env) => {
+    setWebShh(env)
+  }
   useEffect(() => {
     setWebShh()
+    eventBus.on('envChange', (env) => { handleEvent(env) });
     return () => {
+      eventBus.off('envChange', handleEvent);
       clearInterval(timeoutObj);
       clearTimeout(serverTimeoutObj);
       if (webShh) {
-          webShh.close();
+        webShh.close();
       }
-  };
+    };
+
   }, [])
   return (
     <PageContainer
@@ -182,7 +188,7 @@ const Index: React.FC = () => {
         breadcrumb: {},
       }}
     >
-      <Card style={{marginBottom: '20px'}}>
+      <Card style={{ marginBottom: '20px' }}>
         <div className='top-search'>
           <div className='top-search-left'>
             <div className='top-search-label'>服务器名称:</div>

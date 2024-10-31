@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useLayoutEffect } from 'react';
 import CodeMirror, { EditorFromTextArea } from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 
@@ -28,8 +28,8 @@ interface CodeMirrorEditorProps {
   onChangeLine?: () => void;
 }
 
-const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
-  const { language } = props;
+const DisCodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
+  const { language, value } = props;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<EditorFromTextArea>();
 
@@ -63,8 +63,10 @@ const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
       // 清理和销毁编辑器实例
       editorRef.current?.toTextArea();
     };
-  }, []);
-
+  }, [value]);
+  // useLayoutEffect(() => {
+  //   editorRef.current?.setValue(value || '');
+  // },[value])
   const initCodeMirror = () => {
     const editorConfig = {
       tabSize: 2, // 制表符的宽度。默认为 4。
@@ -137,4 +139,4 @@ const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
   return <textarea ref={textareaRef} />;
 };
 
-export default CodeMirrorEditorModal;
+export default DisCodeMirrorEditorModal;

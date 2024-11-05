@@ -28,7 +28,8 @@ const Index: React.FC = () => {
     const param = {
       env: getStorage('env'),
       sname,
-      envs: newCode
+      envs: newCode,
+      organize: getStorage('organize')
     }
     console.log(param)
     const {status, msg } = await editEnvConfigAPI(param)
@@ -42,7 +43,8 @@ const Index: React.FC = () => {
   const getEnvConfig = async (name: string) => {
     const param = {
       env: getStorage('env'),
-      sname: name
+      sname: name,
+      organize: getStorage('organize')
     }
     const { data: { envs } } = await getEnvConfigListAPI(param)
     setCode(envs)
@@ -50,7 +52,8 @@ const Index: React.FC = () => {
   // 获取微服务列表
   const getServiceList = async (env) => {
     const param = {
-      env: env ? env : getStorage('env')
+      env: env ? env : getStorage('env'),
+      organize: getStorage('organize')
     }
     console.log(env)
     const { data: { items } } = await getServiceListAPI(param)

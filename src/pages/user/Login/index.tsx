@@ -1,9 +1,9 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, message } from 'antd';
-import React, { useState } from 'react';
-import { LoginForm, ProFormText } from '@ant-design/pro-form';
+import React, { useState, useEffect } from 'react';
+import { LoginForm, ProFormText, ProFormSelect } from '@ant-design/pro-form';
 import { history, useModel } from 'umi';
-import { login } from '@/services/login/login';
+import { getProjectList, login } from '@/services/login/login';
 import './index.less';
 import { setStorage } from '@/utils/storage';
 import loginLogo from '../../../../public/icons/loginLogo.png';
@@ -36,7 +36,7 @@ const Login: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await setInitialState((s) => ({
         ...s,
-        currentUser: {...data,extraArray: array,defaultEnv: array[0].value},
+        currentUser: { ...data, extraArray: array, defaultEnv: array[0].value },
       }));
     }
   };
@@ -45,13 +45,14 @@ const Login: React.FC = () => {
     try {
       // 登录
       const {
-        data: { token,extra },
+        data: { token, extra },
         status,
         msg,
       } = await login({ ...values });
       if (status === 0) {
         message.success('登录成功！');
         setStorage('token', token);
+        setStorage('organize', values.organize);
         setStorage('p_secret', values.password);
         // setStorage('user_info', data.__user_info__);
         // setStorage('user_info', {name: values.username});
@@ -76,6 +77,23 @@ const Login: React.FC = () => {
     }
     setSubmitting(false);
   };
+  const getList = async () => {
+    const array: { label: any; value: any }[] = [];
+    const param = {};
+    const {
+      data: { items },
+      status,
+    } = await getProjectList(param);
+    if (status === 0) {
+      items?.map((item_: any) => {
+        array.push({ label: item_.name, value: item_.name });
+      });
+      return array;
+    } else {
+      return [];
+    }
+  };
+
 
   return (
     <div className="container">
@@ -93,37 +111,48 @@ const Login: React.FC = () => {
             {userLoginState != 0 && <LoginMessage content={userLoginMsg} />}
             {
               <>
-                 <ProFormText
-                    className="phoneInput"
-                    fieldProps={{
-                      autoFocus: true,
-                      size: 'large',
-                      prefix: <UserOutlined />,
-                    }}
-                    name="username"
-                    placeholder="账号"
-                    rules={[
-                      {
-                        required: true,
-                        message: '请输入账号！',
-                      }
-                    ]}
-                  />
+                <ProFormSelect
+                  width='lg'
+                  name="organize"
+                  fieldProps={{
+                    autoFocus: true,
+                    size: 'large',
+                  }}
+                  request={() => getList()}
+                  placeholder="请选择项目名称"
+                  rules={[{ required: true, message: '请选择项目名称!' }]}
+                />
+                <ProFormText
+                  className="phoneInput"
+                  fieldProps={{
+                    autoFocus: true,
+                    size: 'large',
+                    prefix: <UserOutlined />,
+                  }}
+                  name="username"
+                  placeholder="账号"
+                  rules={[
+                    {
+                      required: true,
+                      message: '请输入账号！',
+                    }
+                  ]}
+                />
                 <ProFormText.Password
-                    placeholder="密码"
-                    fieldProps={{
-                      size: 'large',
-                      prefix: <LockOutlined/>,
-                    }}
-                    rules={[
-                      {
-                        required: true,
-                        message: '请输入密码！',
-                      },
-                    ]}
-                    width="md"
-                    name="password"
-                  />
+                  placeholder="密码"
+                  fieldProps={{
+                    size: 'large',
+                    prefix: <LockOutlined />,
+                  }}
+                  rules={[
+                    {
+                      required: true,
+                      message: '请输入密码！',
+                    },
+                  ]}
+                  width="lg"
+                  name="password"
+                />
               </>
             }
           </LoginForm>

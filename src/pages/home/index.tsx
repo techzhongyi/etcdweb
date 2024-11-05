@@ -8,6 +8,7 @@ import './index.less'
 import { webSocket } from '@/utils/socket';
 import { useModel } from 'umi';
 import { getStorage } from '@/utils/storage';
+import eventBus from '@/utils/eventBus';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -112,23 +113,17 @@ const Index: React.FC = () => {
     timeoutObj = setInterval(() => {
       if (webShh?.readyState === 1) {
         webShh.send('ping');
+      }else {
+        // webShhRefresh?.readyState != 1 连接异常 重新建立连接
+        setWebShh(getStorage('env'))
       }
-      // 3、发送数据 5s后没有接收到返回的数据进行关闭websocket重连
-      serverTimeoutObj = setTimeout(() => {
-        webShh?.close();
-        webShh = null;
-        // 通知关掉当前终端的图片长链接
-        // sshImgCol(connect_id)
-        // destroyed(false)
-        setWebShh()
-      }, 10000);
-
     }, 3000);
   };
   // 发送请求
   const setWebShh = async (env?) => {
     const data = {
-      env: env ? env : getStorage('env')
+      env: env ? env : getStorage('env'),
+      organize: getStorage('organize')
     }
     console.log(envs)
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -157,13 +152,6 @@ const Index: React.FC = () => {
       setWebShh()
     }
   };
-  // 获取初始数据
-  //   useEffect(() => {
-  //     eventBus.on('env', (env) => { handleEvent(env) });
-  //     return () => {
-  //         eventBus.off('env', handleEvent);
-  //     }
-  // }, []);
   const handleEvent = (env) => {
     setWebShh(env)
   }

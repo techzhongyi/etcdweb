@@ -68,6 +68,7 @@ const Index: React.FC = () => {
       count: params.pageSize,
       sname,
       env: getStorage('env'),
+      organize: getStorage('organize'),
       level: params.level ? params.level : '',
       type: params.type ? params.type : '',
       node: params.node ? params.node : '',
@@ -86,7 +87,8 @@ const Index: React.FC = () => {
   };
   const getServiceList = async (env) => {
     const param = {
-      env: env ? env : getStorage('env')
+      env: env ? env : getStorage('env'),
+      organize: getStorage('organize')
     }
     console.log(env)
     const { data: { items } } = await getServiceListAPI(param)
@@ -120,7 +122,7 @@ const Index: React.FC = () => {
       }}
     >
       <Card>
-        <div className='log-content'>
+        <div className='logs-content'>
           <div className='log-list-select'>
             <div className='log-content-title'>微服务列表</div>
             <div className='log-item-list'>

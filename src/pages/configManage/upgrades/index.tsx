@@ -52,6 +52,7 @@ const Index: React.FC = () => {
   const setWebShhRefresh = async (env) => {
     const data = {
       env: env ? env : getStorage('env'),
+      organize: getStorage('organize')
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhRefresh = await webSocket('/devopsCore/refresh', data);
@@ -102,6 +103,7 @@ const Index: React.FC = () => {
   const setWebShhApply = async (env) => {
     const data = {
       env: env ? env : getStorage('env'),
+      organize: getStorage('organize')
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhApply = await webSocket('/devopsCore/apply', data);

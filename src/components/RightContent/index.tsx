@@ -20,6 +20,7 @@ const GlobalHeaderRight: React.FC = () => {
   const [initDefaultEnv,setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
   useEffect( () => {
     // setEnvs(defaultEnv)
+    setStorage('env', defaultEnv)
     eventBus.emit('envChange', defaultEnv);
   },[defaultEnv])
   if (!initialState || !initialState.settings) {

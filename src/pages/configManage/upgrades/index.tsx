@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Button, Card } from 'antd';
+import { Button, message, Card } from 'antd';
 import './index.less';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
 import { getStorage } from '@/utils/storage';
 import eventBus from '@/utils/eventBus';
 import ApplyModal from './components/applyModal';
+import { finishedSqlconfirmAPI } from '@/services/comservice';
+import ApplyDownModal from './components/applyDownModal';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -25,12 +27,21 @@ const Index: React.FC = () => {
   const [isDone, setIsDone] = useState(false)
   const [applyIsDone, setApplyIsDone] = useState(false)
   const [visible, setVisible] = useState<boolean>(false);
-
+  const [visible1, setVisible1] = useState<boolean>(false);
+  const [record1, setRecord1] = useState<any>(undefined);
   // 新增 编辑 关闭Modal
   const isShowModal = (show: boolean) => {
     setVisible(show);
   };
 
+  // 新增 编辑 关闭Modal
+  const isShowModal1 = (show: boolean) => {
+    setVisible1(show);
+    setRecord1({
+      env: getStorage('env'),
+      organize: getStorage('organize')
+    });
+  };
   // 保持步骤心跳
   const longRefreshstart = () => {
     //1、通过关闭定时器和倒计时进行重置心跳
@@ -119,12 +130,14 @@ const Index: React.FC = () => {
         }
         const _data = JSON.parse(recv.data)
         setApplyIsDone(!(_data.IsDone))
+        if (_data.NeedSqlConfirm) {
+          isShowModal1(true)
+        }
         if (_data.Msg == '') {
           return
         }
         applyData_ += (_data.Msg) + '<br/>';
         setApplyData(applyData_)
-
       } else {
         // zsentry.consume(recv.data);
       }
@@ -246,6 +259,21 @@ const Index: React.FC = () => {
     isShowModal(false)
     webShhApply.send('apply??' + value.desc)
   }
+  //
+  const onFinish1 = async (value) => {
+    console.log(value)
+    const params = {
+      env: getStorage('env'),
+      organize: getStorage('organize'),
+      sqls: value
+    }
+    const { status, msg } = await finishedSqlconfirmAPI(params)
+    if (status == 0) {
+      isShowModal1(false)
+    } else {
+      message.error(msg)
+    }
+  }
 
   return (
     <PageContainer
@@ -258,6 +286,9 @@ const Index: React.FC = () => {
       <Card>
         <div className='upgrades-content'>
           <div className='upgrades-content-btns'>
+          <Button type="primary" onClick={() => {
+              isShowModal1(true)
+            }}>btn</Button>
             <Button type="primary" loading={isDone} onClick={() => {
               refresh()
             }}>{isDone ? '执行中' : '刷新'}</Button>
@@ -302,6 +333,16 @@ const Index: React.FC = () => {
           visible={visible}
           isShowModal={isShowModal}
           onFinish={onFinish}
+        />
+      )}
+      {!visible1 ? (
+        ''
+      ) : (
+        <ApplyDownModal
+          visible={visible1}
+          isShowModal={isShowModal1}
+          onFinish={onFinish1}
+          record={record1}
         />
       )}
     </PageContainer>

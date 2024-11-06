@@ -9,3 +9,17 @@ export async function getServiceListAPI(options: any) {
     params: options,
   });
 }
+/** 常链接 应用按钮点击完之后调用接口 GET /devopsCore/service */
+export async function getSqlconfirmAPI(options: any) {
+  return request('/devopsCore/sqlconfirm', {
+    method: 'GET',
+    params: options,
+  });
+}
+/** 常链接 应用按钮点击完之后 回调确认接口 GET /devopsCore/service */
+export async function finishedSqlconfirmAPI(options: any) {
+  return request('/devopsCore/sqlconfirm', {
+    method: 'PUT',
+    data: options,
+  });
+}

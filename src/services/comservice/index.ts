@@ -23,3 +23,10 @@ export async function finishedSqlconfirmAPI(options: any) {
     data: options,
   });
 }
+/** 获取apply 执行结果 GET /devopsCore/lastugp */
+export async function getFinishedLastugpAPI(options: any) {
+  return request('/devopsCore/lastugp', {
+    method: 'GET',
+    params: options,
+  });
+}

@@ -16,7 +16,6 @@ const Index: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [pageSize, setPageSize] = useState<number>(10);
   const [dataList, setDataList] = useState([])
-  const { envs, setEnvs } = useModel('model')
   const columns: ProColumns<any>[] = [
     {
       title: '序号',
@@ -125,7 +124,6 @@ const Index: React.FC = () => {
       env: env ? env : getStorage('env'),
       organize: getStorage('organize')
     }
-    console.log(envs)
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShh = await webSocket('/devopsCore/home', data);
     webShh.onopen = (res: any) => {
@@ -133,10 +131,8 @@ const Index: React.FC = () => {
     };
     // 回调
     webShh.onmessage = function (recv: any) {
-      longstart();
       if (typeof (recv.data) === 'string') {
         if (recv.data == 'pong' || recv.data == 'null') {
-          setDataList([])
           return
         }
         const data_ = JSON.parse(recv.data);
@@ -179,8 +175,8 @@ const Index: React.FC = () => {
       <Card style={{ marginBottom: '20px' }}>
         <div className='top-search'>
           <div className='top-search-left'>
-            <div className='top-search-label'>服务器名称:</div>
-            <div><Input placeholder="请输入服务器名称" allowClear={true} onChange={(e) => { licenseChange(e) }} /></div>
+            {/* <div className='top-search-label'>服务器名称:</div>
+            <div><Input placeholder="请输入服务器名称" allowClear={true} onChange={(e) => { licenseChange(e) }} /></div> */}
           </div>
           <div className='top-search-right'>
             <div>

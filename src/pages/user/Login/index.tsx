@@ -107,7 +107,7 @@ const Login: React.FC = () => {
               await handleSubmit(values as API.LoginParams);
             }}
           >
-            <div className="loginTitle">沂威售后服务站平台</div>
+            <div className="loginTitle">服务监控治理CICD平台</div>
             {userLoginState != 0 && <LoginMessage content={userLoginMsg} />}
             {
               <>
@@ -123,6 +123,7 @@ const Login: React.FC = () => {
                   rules={[{ required: true, message: '请选择项目名称!' }]}
                 />
                 <ProFormText
+                 width='lg'
                   className="phoneInput"
                   fieldProps={{
                     autoFocus: true,
@@ -139,6 +140,7 @@ const Login: React.FC = () => {
                   ]}
                 />
                 <ProFormText.Password
+                 width='lg'
                   placeholder="密码"
                   fieldProps={{
                     size: 'large',

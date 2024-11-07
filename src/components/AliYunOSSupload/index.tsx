@@ -76,7 +76,7 @@ export default class AliyunOSSUpload extends React.Component<any, any> {
       await this.init();
       // await this.initTest();
     }
-    // __GKZY__ 国科智运 方便之后解析
+    // __GKZY__ CICD平台 方便之后解析
     file.key = OSSData.dir + '/' + Date.now() + '__GKZY__' + file.name; // 在getExtraData函数中会用到  在云存储中存储的文件的key
     file.url =
       OSSData.host + OSSData.dir + '/' + Date.now() + '__GKZY__' + file.name; // 上传完成后  用于显示内容
@@ -107,7 +107,7 @@ export default class AliyunOSSUpload extends React.Component<any, any> {
             ctx.textBaseline = 'middle';
             ctx.font = fontSize;
             ctx?.fillText(
-              '国科智运专用',
+              'CICD平台专用',
               canvas.width * 0.68,
               canvas.height * 0.88,
             );

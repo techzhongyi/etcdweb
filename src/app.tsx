@@ -130,14 +130,19 @@ export const layout: RunTimeLayoutConfig = ({
     //   return route_
 
     // },
-    // headerContentRender: () => (
-    //   <HeaderContent collapse={initialState?.collapsed} onCollapse={onCollapse} />
-    // ),
+    headerContentRender: () => (
+      <HeaderContent collapse={initialState?.collapsed} onCollapse={onCollapse} />
+    ),
     // collapsedButtonRender: false,
     // // 指定配置collapsed
     // collapsed: initialState?.collapsed,
     // // 菜单的折叠收起事件
     // onCollapse: onCollapse,
+    collapsedButtonRender: false,
+    // 指定配置collapsed
+    collapsed: initialState?.collapsed,
+    // 菜单的折叠收起事件
+    onCollapse: onCollapse,
     onPageChange: () => {
       const { location } = history;
       window.scrollTo(0, 0);
@@ -171,6 +176,13 @@ export const layout: RunTimeLayoutConfig = ({
       // content: '沂威售后服务站平台'
     },
     links: isDev ? [] : [],
+    menuHeaderRender: () => {
+      if(initialState?.collapsed == true){
+        return <img src={logo1} alt="" />
+      }else{
+        return <img src={logo} alt="" />
+      }
+    },
     menuHeaderRender: () => {
       if (initialState?.collapsed == true) {
         return <img src={logo1} alt="" />;

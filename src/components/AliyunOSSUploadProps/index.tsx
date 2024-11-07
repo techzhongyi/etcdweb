@@ -68,7 +68,7 @@ const AliyunOSSUploadProp: React.FC<AliyunOSSUploadProps> = ({
     if (expire < Date.now()) {
       await init();
     }
-    // __GKZY__ 国科智运 方便之后解析
+    // __GKZY__ CICD平台 方便之后解析
     file.key = OSSData.dir + '/' + Date.now() + '__GKZY__' + file.name; // 在getExtraData函数中会用到  在云存储中存储的文件的key
     file.url =
       OSSData.host + OSSData.dir + '/' + Date.now() + '__GKZY__' + file.name; // 上传完成后  用于显示内容

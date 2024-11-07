@@ -7,8 +7,9 @@ import { webSocket } from '@/utils/socket';
 import { getStorage } from '@/utils/storage';
 import eventBus from '@/utils/eventBus';
 import ApplyModal from './components/applyModal';
-import { finishedSqlconfirmAPI } from '@/services/comservice';
+import { finishedSqlconfirmAPI, getFinishedLastugpAPI } from '@/services/comservice';
 import ApplyDownModal from './components/applyDownModal';
+import moment from 'moment';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -29,6 +30,12 @@ const Index: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const [visible1, setVisible1] = useState<boolean>(false);
   const [record1, setRecord1] = useState<any>(undefined);
+  const [infoDetail, setInfoDetail] = useState<any>({
+    stsd: null,
+    success: '',
+    info: '',
+    error: ''
+  });
   // 新增 编辑 关闭Modal
   const isShowModal = (show: boolean) => {
     setVisible(show);
@@ -198,11 +205,13 @@ const Index: React.FC = () => {
   const handleEvent = (env) => {
     setWebShh(env)
     // setWebShhApply(env)
+    getApplyResult(env)
   }
   useEffect(() => {
     setWebShh(getStorage('env'))
     setWebShhApply(getStorage('env'))
     setWebShhRefresh(getStorage('env'))
+    getApplyResult(getStorage('env'))
     eventBus.on('envChange', (env) => { handleEvent(env) });
     return () => {
       eventBus.off('envChange', handleEvent);
@@ -274,6 +283,15 @@ const Index: React.FC = () => {
       message.error(msg)
     }
   }
+  // 获取apply执行结果
+  const getApplyResult = async (env) => {
+    const params = {
+      env: env ? env : getStorage('env'),
+      organize: getStorage('organize'),
+    }
+    const { data } = await getFinishedLastugpAPI(params)
+    setInfoDetail(data)
+  }
 
   return (
     <PageContainer
@@ -286,9 +304,6 @@ const Index: React.FC = () => {
       <Card>
         <div className='upgrades-content'>
           <div className='upgrades-content-btns'>
-          <Button type="primary" onClick={() => {
-              isShowModal1(true)
-            }}>btn</Button>
             <Button type="primary" loading={isDone} onClick={() => {
               refresh()
             }}>{isDone ? '执行中' : '刷新'}</Button>
@@ -312,10 +327,20 @@ const Index: React.FC = () => {
                   <div id='procedure-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: applyData }}></div>
                 }
               </div>
+              <div>
+                <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
+                <div>标题: {infoDetail.info}</div>
+                <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
+                {
+                  infoDetail.success != 'yes' && <div>失败原因: {infoDetail.error}</div>
+                }
+              </div>
             </div>
           </div>
 
-          <div style={{ margin: '10px 0' }}></div>
+          <div style={{ margin: '10px 0' }}>
+
+          </div>
           <div>
             <div className='content-title'>日志</div>
             <div className='log-content'>

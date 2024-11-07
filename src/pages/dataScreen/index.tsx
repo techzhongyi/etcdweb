@@ -367,13 +367,13 @@ const Index: React.FC = () => {
                             <img src={datalogo} alt="" />
                         </div>
                         <div>
-                            <div>国科智运技术支持</div>
+                            <div>CICD平台</div>
                             <div className="data-top-left-china">
                                 GUO KE ZHI YUN JI SHU ZHI CHI
                             </div>
                         </div> */}
           </div>
-          <div className="data-top-center">沂威数据运营管理系统</div>
+          <div className="data-top-center">CICD平台</div>
           <div className="data-top-right">
             <Clock />
             <Weather />
@@ -691,7 +691,7 @@ const Index: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="data-bottom">技术支持方@国科智运</div>
+        <div className="data-bottom">技术支持方@CICD平台</div>
       </div>
     </div>
   );

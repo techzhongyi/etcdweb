@@ -79,7 +79,7 @@ const Index: React.FC = () => {
           {activeIndex == 2 && <MoniterData />}
         </div>
         <div className="copy-right">
-          技术服务支持：国科智运山东新能源技术有限公司
+          技术服务支持：CICD平台技术有限公司
         </div>
       </div>
     </div>

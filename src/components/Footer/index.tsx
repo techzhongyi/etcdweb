@@ -4,7 +4,7 @@ import { DefaultFooter } from '@ant-design/pro-layout';
 
 export default () => {
   // const intl = useIntl();
-  const defaultMessage = '国科智运';
+  const defaultMessage = 'CICD平台';
 
   const currentYear = new Date().getFullYear();
 

@@ -12,7 +12,7 @@ const Settings: LayoutSettings & {
   fixedHeader: true,
   fixSiderbar: true,
   colorWeak: false,
-  title: '国科智运',
+  title: 'CICD平台',
   menu: {
     locale: false, //关闭国际化语言
   },

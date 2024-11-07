@@ -1,6 +1,6 @@
 import { Select, Space } from 'antd';
 // import { QuestionCircleOutlined } from '@ant-design/icons';
-import React,{ useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import NoticeIconView from '../NoticeIcon';
 import Avatar from './AvatarDropdown';
@@ -12,17 +12,14 @@ import { setStorage, getStorage } from '@/utils/storage';
 import eventBus from '@/utils/eventBus';
 const GlobalHeaderRight: React.FC = () => {
   const { initialState } = useModel('@@initialState');
-  const {envs, setEnvs } = useModel('model')
-  if(!initialState){
-    return null
-  }
   const { extraArray, defaultEnv } = initialState?.currentUser
-  const [initDefaultEnv,setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
-  useEffect( () => {
-    // setEnvs(defaultEnv)
-    setStorage('env', defaultEnv)
+  const [initDefaultEnv, setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
+  useEffect(() => {
+    if(!getStorage('env')){
+      setStorage('env', defaultEnv)
+    }
     eventBus.emit('envChange', defaultEnv);
-  },[defaultEnv])
+  }, [defaultEnv])
   if (!initialState || !initialState.settings) {
     return null;
   }
@@ -74,14 +71,13 @@ const GlobalHeaderRight: React.FC = () => {
       </span> */}
       {/* <NoticeIconView /> */}
       <div>
-              <Select
-                defaultValue={initDefaultEnv}
-                style={{ width: 200 }}
-                onChange={(e) => { envChange(e) }}
-                options={extraArray}
-              />
-              {}
-            </div>
+        <Select
+          defaultValue={initDefaultEnv}
+          style={{ width: 200 }}
+          onChange={(e) => { envChange(e) }}
+          options={extraArray}
+        />
+      </div>
       <Avatar />
       <LoginOut />
       {/* <SelectLang className={styles.action} /> */}

@@ -161,7 +161,7 @@ export default class UploadImg extends React.Component<any, any> {
             ctx.textBaseline = 'middle';
             ctx.font = fontSize;
             ctx?.fillText(
-              '国科智运专用',
+              'CICD平台专用',
               canvas.width * 0.68,
               canvas.height * 0.88,
             );

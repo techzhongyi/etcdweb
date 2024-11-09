@@ -25,11 +25,22 @@
     name: '首页',
     icon: 'FundProjectionScreenOutlined',
     component: './home',
+    hideInMenu: true,
+    layout: false,
+  },
+  {
+    path: '/opration',
+    name: '首页',
+    icon: 'FundProjectionScreenOutlined',
+    component: './opration',
+    hideInMenu: true,
+    layout: false,
   },
   {
     path: '/versions',
     name: '版本管理',
     icon: 'SolutionOutlined',
+    hideInMenu: true,
     routes: [
       {
         path: '/versions/list',
@@ -42,12 +53,14 @@
   {
     path: '/serviceConfig',
     name: '全部服务',
+    hideInMenu: true,
     icon: 'FundProjectionScreenOutlined',
     component: './serviceConfig',
   },
   {
     path: '/configManage',
     name: '服务管理',
+    hideInMenu: true,
     icon: 'SolutionOutlined',
     routes: [
       {
@@ -62,6 +75,7 @@
   {
     path: '/env',
     name: 'ENV配置',
+    hideInMenu: true,
     icon: 'FundProjectionScreenOutlined',
     component: './envConfig',
   },
@@ -69,6 +83,7 @@
     path: '/log',
     name: '服务日志',
     icon: 'FundProjectionScreenOutlined',
+    hideInMenu: true,
     component: './log',
   },
   {

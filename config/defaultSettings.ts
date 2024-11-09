@@ -6,8 +6,8 @@ const Settings: LayoutSettings & {
 } = {
   navTheme: 'light',
   // 拂晓蓝
-  primaryColor: '#5578F9',
-  layout: 'side',
+  primaryColor: '#11BBAA',
+  layout: 'top',
   contentWidth: 'Fluid',
   fixedHeader: true,
   fixSiderbar: true,

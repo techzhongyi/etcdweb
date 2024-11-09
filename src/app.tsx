@@ -130,9 +130,9 @@ export const layout: RunTimeLayoutConfig = ({
     //   return route_
 
     // },
-    headerContentRender: () => (
-      <HeaderContent collapse={initialState?.collapsed} onCollapse={onCollapse} />
-    ),
+    // headerContentRender: () => (
+    //   <HeaderContent collapse={initialState?.collapsed} onCollapse={onCollapse} />
+    // ),
     // collapsedButtonRender: false,
     // // 指定配置collapsed
     // collapsed: initialState?.collapsed,

@@ -1,108 +1,37 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import type { ActionType, ProColumns } from '@ant-design/pro-table';
-import ProTable from '@ant-design/pro-table';
-import { Input, Card } from 'antd';
-import moment from 'moment';
+import React, { useEffect, useState } from 'react';
+import { Select } from 'antd';
 import './index.less'
 import { webSocket } from '@/utils/socket';
 import { useModel } from 'umi';
-import { getStorage } from '@/utils/storage';
+import { setStorage, getStorage } from '@/utils/storage';
 import eventBus from '@/utils/eventBus';
+import green_cloud from '../../../public/icons/ectd/green_cloud.png'
+import red_cloud from '../../../public/icons/ectd/red_cloud.png'
+import gray_cloud from '../../../public/icons/ectd/gray_cloud.png'
+import EtdcHeader from '@/components/NewHeader';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
 const Index: React.FC = () => {
-  const actionRef = useRef<ActionType>();
-  const [pageSize, setPageSize] = useState<number>(10);
+
+  const { initialState } = useModel('@@initialState');
+  const { extraArray, defaultEnv } = initialState?.currentUser
+  const [initDefaultEnv, setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
   const [dataList, setDataList] = useState([])
-  const columns: ProColumns<any>[] = [
-    {
-      title: '序号',
-      align: 'center',
-      key: 'index',
-      hideInSearch: true,
-      valueType: 'index',
-      width: 60,
-    },
-    {
-      title: 'NODE名称',
-      key: 'name',
-      dataIndex: 'name',
-      align: 'center',
-      hideInSearch: true,
-    },
-    {
-      title: 'IP地址',
-      key: 'ip',
-      dataIndex: 'ip',
-      align: 'center',
-      hideInSearch: true,
-    },
-    {
-      title: 'CPU使用率',
-      key: 'cpuusage',
-      dataIndex: 'cpuusage',
-      align: 'center',
-      hideInSearch: true,
-    },
-    {
-      title: '磁盘空间',
-      key: 'diskio',
-      dataIndex: 'diskio',
-      align: 'center',
-      hideInSearch: true,
-    },
-    {
-      title: '内存使用率',
-      align: 'center',
-      dataIndex: 'memusage',
-      key: 'memusage',
-      hideInSearch: true,
-    },
-    {
-      title: '系统类型',
-      align: 'center',
-      dataIndex: 'os',
-      key: 'os',
-      hideInSearch: true,
-    },
-    {
-      title: '状态',
-      dataIndex: 'healthy',
-      key: 'healthy',
-      hideInSearch: true,
-      align: 'center',
-      valueType: 'select',
-      valueEnum: {
-        '0': { text: '运行中', status: 'Success', },
-        '1': { text: '故障', status: 'Error', },
-        '2': { text: '失联', status: 'Default', },
-      }
-    },
-    {
-      title: '描述',
-      align: 'center',
-      dataIndex: 'desc',
-      key: 'desc',
-      ellipsis: true,
-      hideInSearch: true,
-    },
-    {
-      title: '更新时间',
-      align: 'center',
-      dataIndex: 'updatetime',
-      key: 'updatetime',
-      valueType: 'dateTime',
-      render: (_, row) => moment(row.updatetime).format('YYYY-MM-DD'),
-      hideInSearch: true,
-    },
-  ];
 
-  const licenseChange = (e) => {
-
+  useEffect(() => {
+    if (!getStorage('env')) {
+      setStorage('env', defaultEnv)
+    }
+    eventBus.emit('envChange', defaultEnv);
+  }, [defaultEnv])
+  // 环境切换
+  const envChange = (e) => {
+    setStorage('env', e)
+    setInitDefaultEnv(e)
+    // setEnvs(e)
+    eventBus.emit('envChange', e);
   }
-
   // 保持心跳
   const longstart = () => {
     //1、通过关闭定时器和倒计时进行重置心跳
@@ -112,7 +41,7 @@ const Index: React.FC = () => {
     timeoutObj = setInterval(() => {
       if (webShh?.readyState === 1) {
         webShh.send('ping');
-      }else {
+      } else {
         // webShhRefresh?.readyState != 1 连接异常 重新建立连接
         setWebShh(getStorage('env'))
       }
@@ -136,6 +65,7 @@ const Index: React.FC = () => {
           return
         }
         const data_ = JSON.parse(recv.data);
+        console.log(data_)
         setDataList(data_)
       } else {
         // zsentry.consume(recv.data);
@@ -145,7 +75,7 @@ const Index: React.FC = () => {
     webShh.onerror = function () {
       webShh?.close();
       webShh = null;
-      setWebShh()
+      // setWebShh()
     }
   };
   const handleEvent = (env) => {
@@ -164,107 +94,266 @@ const Index: React.FC = () => {
     };
 
   }, [])
+
   return (
-    <PageContainer
-      ghost
-      header={{
-        title: ' ',
-        breadcrumb: {},
-      }}
-    >
-      <Card style={{ marginBottom: '20px' }}>
-        <div className='top-search'>
-          <div className='top-search-left'>
-            {/* <div className='top-search-label'>服务器名称:</div>
-            <div><Input placeholder="请输入服务器名称" allowClear={true} onChange={(e) => { licenseChange(e) }} /></div> */}
+    <div className='page-container'>
+      {/* <div className='page-header'>
+        <div className='page-header-logo'><img src={logo} alt="" /></div>
+        <div className='page-header-title'>服务监控治理CICD平台</div>
+        <div className='page-header-action'>
+          <div>
+            <div className='user-icon'><img src={user_icon} alt="" /></div>
+            <div className='user-name'>{currentUser.name}</div>
           </div>
-          <div className='top-search-right'>
-            <div>
-              <div className='green'></div>
-              <div className='text'>正常</div>
+          <div>
+            <LogoutOutlined onClick={() => { logout() }} style={{ fontSize: '30px' }} />
+          </div>
+        </div>
+      </div> */}
+      <EtdcHeader />
+      <div className='home-select-env'>
+        <Select
+          defaultValue={initDefaultEnv}
+          style={{ width: 200 }}
+          onChange={(e) => { envChange(e) }}
+          options={extraArray}
+        />
+      </div>
+      <div className='home-content'>
+        <div className='home-content-list'>
+          <div className='list-title'>
+            <div>Gkzyrent.node1</div>
+            <div>CPU:90%,MEM:40%,IO:XXX</div>
+            <div>V2.0</div>
+          </div>
+          <div className='list-content'>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
             </div>
-            <div>
-              <div className='red'></div>
-              <div className='text'>异常</div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
             </div>
-            <div>
-              <div className='yellow'></div>
-              <div className='text'>失联</div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={gray_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={red_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
             </div>
           </div>
         </div>
-        <div className='node-wrap'>
-          {
-            dataList.map(item => {
-              return (
-                <div className='node-list'>
-                  <div className='node-title'>{item.name}</div>
-                  <div className='square-list'>
-                    {
-                      item.services.map(item_ => {
-                        return (
-                          <div className={item_.health === 0 ? 'square-item-green' : item_.health === 1 ? 'square-item-red' : 'square-item-yellow'}>
-                            {item_.sname}
-                          </div>
-                        )
-                      })
-                    }
-                  </div>
-                </div>
-              )
-            })
-          }
+        <div className='home-content-list'>
+          <div className='list-title'>
+            <div>Gkzyrent.node1</div>
+            <div>CPU:90%,MEM:40%,IO:XXX</div>
+            <div>V2.0</div>
+          </div>
+          <div className='list-content'>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={gray_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={red_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </Card>
-      <ProTable<any>
-        bordered
-        columns={columns}
-        actionRef={actionRef}
-        dataSource={dataList}
-        editable={{
-          type: 'multiple',
-        }}
-        columnsState={{
-          persistenceKey: 'pro-table-singe-demos',
-          persistenceType: 'localStorage',
-        }}
-        rowKey="id"
-        search={false}
-        pagination={{
-          pageSize: pageSize,
-          showSizeChanger: true,
-          onShowSizeChange: (current, pageSize) => {
-            setPageSize(pageSize);
-          },
-        }}
-        options={false}
-        dateFormatter="string"
-        headerTitle="配置列表"
-        toolBarRender={() => []}
-      />
-      {/* {!visible ? (
-        ''
-      ) : (
-        <ConfigAddOrEditModal
-          visible={visible}
-          isShowModal={isShowModal}
-          onFinish={onFinish}
-          record={record}
-          editId={editId}
-        />
-      )}
-      {!visible1 ? (
-        ''
-      ) : (
-        <ComparesModal
-          visible={visible1}
-          isShowModal={isShowModal1}
-          onFinish={onFinish1}
-          record={record}
-          editId={editId}
-        />
-      )} */}
-    </PageContainer>
+        <div className='home-content-list'>
+          <div className='list-title'>
+            <div>Gkzyrent.node1</div>
+            <div>CPU:90%,MEM:40%,IO:XXX</div>
+            <div>V2.0</div>
+          </div>
+          <div className='list-content'>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={gray_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+            <div className='list-item'>
+              <div className='list-item-icon'><img src={red_cloud} alt="" /></div>
+              <div className='list-item-text'>
+                <div className='text-title'>HttpCore</div>
+                <div className='text-status'>健康</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    // <PageContainer
+    //   ghost
+    //   header={{
+    //     title: ' ',
+    //     breadcrumb: {},
+    //   }}
+    // >
+    //   <Card style={{ marginBottom: '20px' }}>
+    //     <div className='top-search'>
+    //       <div className='top-search-left'>
+    //         {/* <div className='top-search-label'>服务器名称:</div>
+    //         <div><Input placeholder="请输入服务器名称" allowClear={true} onChange={(e) => { licenseChange(e) }} /></div> */}
+    //       </div>
+    //       <div className='top-search-right'>
+    //         <div>
+    //           <div className='green'></div>
+    //           <div className='text'>正常</div>
+    //         </div>
+    //         <div>
+    //           <div className='red'></div>
+    //           <div className='text'>异常</div>
+    //         </div>
+    //         <div>
+    //           <div className='yellow'></div>
+    //           <div className='text'>失联</div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //     <div className='node-wrap'>
+    //       {
+    //         dataList.map(item => {
+    //           return (
+    //             <div className='node-list'>
+    //               <div className='node-title'>{item.name}</div>
+    //               <div className='square-list'>
+    //                 {
+    //                   item.services.map(item_ => {
+    //                     return (
+    //                       <div className={item_.health === 0 ? 'square-item-green' : item_.health === 1 ? 'square-item-red' : 'square-item-yellow'}>
+    //                         {item_.sname}
+    //                       </div>
+    //                     )
+    //                   })
+    //                 }
+    //               </div>
+    //             </div>
+    //           )
+    //         })
+    //       }
+    //     </div>
+    //   </Card>
+    //   <ProTable<any>
+    //     bordered
+    //     columns={columns}
+    //     actionRef={actionRef}
+    //     dataSource={dataList}
+    //     editable={{
+    //       type: 'multiple',
+    //     }}
+    //     columnsState={{
+    //       persistenceKey: 'pro-table-singe-demos',
+    //       persistenceType: 'localStorage',
+    //     }}
+    //     rowKey="id"
+    //     search={false}
+    //     pagination={{
+    //       pageSize: pageSize,
+    //       showSizeChanger: true,
+    //       onShowSizeChange: (current, pageSize) => {
+    //         setPageSize(pageSize);
+    //       },
+    //     }}
+    //     options={false}
+    //     dateFormatter="string"
+    //     headerTitle="配置列表"
+    //     toolBarRender={() => []}
+    //   />
+    //   {/* {!visible ? (
+    //     ''
+    //   ) : (
+    //     <ConfigAddOrEditModal
+    //       visible={visible}
+    //       isShowModal={isShowModal}
+    //       onFinish={onFinish}
+    //       record={record}
+    //       editId={editId}
+    //     />
+    //   )}
+    //   {!visible1 ? (
+    //     ''
+    //   ) : (
+    //     <ComparesModal
+    //       visible={visible1}
+    //       isShowModal={isShowModal1}
+    //       onFinish={onFinish1}
+    //       record={record}
+    //       editId={editId}
+    //     />
+    //   )} */}
+    // </PageContainer>
   );
 };
 export default Index;

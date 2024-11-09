@@ -94,7 +94,12 @@ const Index: React.FC = () => {
     };
 
   }, [])
-
+  // toOpratipn
+  const toOpratipn = () => {
+    history.replace({
+      pathname: '/opration',
+    })
+  }
   return (
     <div className='page-container'>
       {/* <div className='page-header'>
@@ -120,7 +125,7 @@ const Index: React.FC = () => {
         />
       </div>
       <div className='home-content'>
-        <div className='home-content-list'>
+        <div className='home-content-list' onClick={() => {toOpratipn()}}>
           <div className='list-title'>
             <div>Gkzyrent.node1</div>
             <div>CPU:90%,MEM:40%,IO:XXX</div>

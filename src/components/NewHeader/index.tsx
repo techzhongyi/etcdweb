@@ -21,7 +21,7 @@ const EtdcHeader: React.FC = (props) => {
   }
   const goHome = () => {
     history.replace({
-      pathname: '/user/home',
+      pathname: '/home',
     })
   }
   return (

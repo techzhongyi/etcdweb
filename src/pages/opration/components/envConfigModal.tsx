@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, message, Modal, Space } from 'antd';
+import { Button, Modal, Space } from 'antd';
 import './index.less'
 import CodeMirrorEditorModal from '@/components/CodeMirror';
 import { ProForm } from '@ant-design/pro-components';
 import { getServiceListAPI } from '@/services/comservice';
 import { getStorage } from '@/utils/storage';
-import eventBus from '@/utils/eventBus';
-import { editEnvConfigAPI, getEnvConfigListAPI } from '@/services/envConfig';
+import { getEnvConfigListAPI } from '@/services/envConfig';
 let newCode = ''
 const EnvConfigModal: React.FC<any> = (props: any) => {
-  const { visible, isShowModal, record, onFinish } = props;
+  const { visible, isShowModal, onFinish } = props;
   const onModealCancel = () => {
     isShowModal(false);
   };
@@ -24,24 +23,27 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
     newCode = value
   };
 
-  // const onFinish = async () => {
-  //   if(count == 1){
-  //     return
-  //   }
-  //   const param = {
-  //     env: getStorage('env'),
-  //     sname,
-  //     envs: newCode,
-  //     organize: getStorage('organize')
-  //   }
-  //   console.log(param)
-  //   const {status, msg } = await editEnvConfigAPI(param)
-  //   if (status === 0) {
-  //     message.success('修改成功')
-  //   } else {
-  //     message.warning(msg)
-  //   }
-  // }
+  const onFinish1 = async () => {
+    if(count == 1){
+      onModealCancel()
+      return
+    }else{
+      onFinish(newCode)
+    }
+    // const param = {
+    //   env: getStorage('env'),
+    //   sname,
+    //   envs: newCode,
+    //   organize: getStorage('organize')
+    // }
+    // console.log(param)
+    // const {status, msg } = await editEnvConfigAPI(param)
+    // if (status === 0) {
+    //   message.success('修改成功')
+    // } else {
+    //   message.warning(msg)
+    // }
+  }
   // 获取envConfig
   const getEnvConfig = async (name: string) => {
     const param = {
@@ -62,26 +64,19 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
     const { data: { items } } = await getServiceListAPI(param)
     setServicesList(items)
   }
-  const handleEvent = (env) => {
-    setActiveIndex('')
-    getServiceList(env)
-  }
+
   useEffect(() => {
     getServiceList(getStorage('env'))
-    eventBus.on('envChange', (env) => { handleEvent(env) });
-    return () => {
-      eventBus.off('envChange', handleEvent);
-    }
   }, [])
   const selectSevices = (e) => {
-    setActiveIndex(e)
+    setActiveIndex(e.id)
     setSname(e)
-    getEnvConfig(e)
+    getEnvConfig(e.id)
   }
   return (
     <Modal
       title='ENV配置'
-      width={1400}
+      width={1280}
       footer={null}
       open={visible}
       maskClosable={false}
@@ -106,7 +101,7 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
             </div>
           ),
         }}
-        onFinish={onFinish}
+        onFinish={onFinish1}
         form={formObj}
       >
       <div className='env-content'>
@@ -116,9 +111,9 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
             {
               servicesList.map(item => {
                 return (
-                  <div className={activeIndex === item ? 'item-active' : ''} onClick={() => {
+                  <div className={activeIndex === item.id ? 'item-active' : ''} onClick={() => {
                     selectSevices(item)
-                  }}>{item}</div>
+                  }}>{item.value}</div>
                 )
               })
             }

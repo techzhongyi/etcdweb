@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Select } from 'antd';
+import { Select, Tooltip } from 'antd';
 import './index.less';
-import { history, useModel } from 'umi';
+import { history } from 'umi';
 import { webSocket } from '@/utils/socket';
 import { setStorage, getStorage } from '@/utils/storage';
-import eventBus from '@/utils/eventBus';
 import green_cloud from '../../../public/icons/ectd/green_cloud.png'
 import red_cloud from '../../../public/icons/ectd/red_cloud.png'
 import gray_cloud from '../../../public/icons/ectd/gray_cloud.png'
@@ -13,24 +12,28 @@ let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
 const Index: React.FC = () => {
-
-  const { initialState } = useModel('@@initialState');
-  const { extraArray, defaultEnv } = initialState?.currentUser
-  const [initDefaultEnv, setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
+  const [env, setEnv] = useState(getStorage('env') || 'Dev')
+  const envArray = [
+    {
+      label: 'Dev',
+      value: 'Dev'
+    },
+    {
+      label: 'Test',
+      value: 'Test'
+    },
+    {
+      label: 'Prod',
+      value: 'Prod'
+    },
+  ]
   const [dataList, setDataList] = useState<any[]>([])
 
-  useEffect(() => {
-    if (!getStorage('env')) {
-      setStorage('env', defaultEnv)
-    }
-    eventBus.emit('envChange', defaultEnv);
-  }, [defaultEnv])
   // 环境切换
   const envChange = (e) => {
     setStorage('env', e)
-    setInitDefaultEnv(e)
-    // setEnvs(e)
-    eventBus.emit('envChange', e);
+    setEnv(e)
+    // setWebShh()
   }
   // 保持心跳
   const longstart = () => {
@@ -48,10 +51,9 @@ const Index: React.FC = () => {
     }, 3000);
   };
   // 发送请求
-  const setWebShh = async (env?) => {
+  const setWebShh = async () => {
     const data = {
-      env: env ? env : getStorage('env'),
-      organize: getStorage('organize')
+      env: getStorage('env') || 'Dev',
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShh = await webSocket('/devopsCore/home', data);
@@ -78,14 +80,9 @@ const Index: React.FC = () => {
       // setWebShh()
     }
   };
-  const handleEvent = (env) => {
-    setWebShh(env)
-  }
   useEffect(() => {
     setWebShh()
-    eventBus.on('envChange', (env) => { handleEvent(env) });
     return () => {
-      eventBus.off('envChange', handleEvent);
       clearInterval(timeoutObj);
       clearTimeout(serverTimeoutObj);
       if (webShh) {
@@ -93,9 +90,9 @@ const Index: React.FC = () => {
       }
     };
 
-  }, [])
+  }, [env])
   // toOpratipn
-  const toOpratipn = (organize,branch) => {
+  const toOpratipn = (organize, branch) => {
     history.push({
       pathname: '/opration',
       query: {
@@ -104,31 +101,42 @@ const Index: React.FC = () => {
       },
     })
   }
+  const getTitle = (item) => {
+    return (
+      <div>
+        <div>持续运行时间:{item.bootupts}</div>
+        <div>心跳响应时间(ms):{item.resptime}</div>
+        {
+          item.status !='good' && <div>错误信息:{item.msg}</div>
+        }
+      </div>
+    )
+  }
   return (
     <div className='page-container'>
       <EtdcHeader />
       <div className='home-select-env'>
         <Select
-          defaultValue={initDefaultEnv}
+          defaultValue={env}
           style={{ width: 200 }}
           onChange={(e) => { envChange(e) }}
-          options={extraArray}
+          options={envArray}
         />
       </div>
       <div className='home-content'>
         {
           dataList.map(item => {
             return (
-              <div className='home-content-list' onClick={() => { toOpratipn(item.organize,item.sourcebranch) }}>
+              <div className='home-content-list' onClick={() => { toOpratipn(item.organize, item.sourcebranch) }}>
                 <div className='list-title'>
                   <div>{item.organize}:{item.name}({item.ip})</div>
                   <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
                   <div>{item.sourcebranch}</div>
                 </div>
                 <div className={['list-content',
-                  item.health.status == 3
+                  item.health.status == 'lost'
                     ? 'list-content-gray'
-                    : item.health.status == 2
+                    : item.health.status == 'lost'
                       ? 'list-content-red'
                       : 'list-content-green',
                 ].join(' ')}>
@@ -136,10 +144,12 @@ const Index: React.FC = () => {
                     item.services.map(item_ => {
                       return (
                         <div className='list-item'>
-                          <div className='list-item-icon'><img src={item_.status == 1 ? green_cloud : item_.status == 2 ? gray_cloud : red_cloud} alt="" /></div>
+                          <Tooltip placement="top" title={getTitle(item_)}>
+                            <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : red_cloud} alt="" /></div>
+                          </Tooltip>
                           <div className='list-item-text'>
                             <div className='text-title'>{item_.sname}</div>
-                            <div className='text-status'>{item_.status == 1 ? '正常' : item.status == 2 ? '失联' : '故障'}</div>
+                            <div className='text-status'>{item_.status == 'good' ? '正常' : item.status == 'lost' ? '失联' : '故障'}</div>
                           </div>
                         </div>
                       )

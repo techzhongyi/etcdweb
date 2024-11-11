@@ -46,17 +46,22 @@
     }
   }
 }
-
+.ant-pro-form-login-main {
+  width: unset !important;
+  margin: 15px auto;
+}
 .main {
   @media screen and (max-width: @screen-sm) {
     width: 95%;
   }
+
   :global {
     .@{ant-prefix}-tabs-nav-list {
       margin: auto;
       font-size: 16px;
     }
   }
+
 
   .loginTitle {
     margin-bottom: 20px;
@@ -78,38 +83,24 @@
     }
   }
 
-  // 手机号输入框样式
-  // .ant-input-affix-wrapper {
-  //   width: 100%;
-  //   height: 56px;
-  // }
-  // .ant-input-affix-wrapper:hover {
-  //   border-color: #20a395;
-  // }
-  // .ant-input-affix-wrapper:focus,
-  // .ant-input-affix-wrapper-focused {
-  //   border-color: #20a395;
-  //   box-shadow: 0 0 0 2px rgba(32, 163, 149, 0.1);
-  // }
-  // .ant-input:focus {
-  //   border-color: #20a395;
-  // }
-  // .ant-input {
-  //   --antd-wave-shadow-color: #20a395;
-  // }
-  // .ant-btn {
-  //   height: 56px;
-  //   border-color: #20a395;
-  //   box-shadow: none;
-  // }
-  // .ant-btn-primary {
-  //   height: 56px;
-  //   background-color: #20a395;
-  // }
+
 }
 
 //pc
 @media screen and (min-width: 768px) and (max-width: 1920px) {
+  .ant-pro-form-login-main {
+    width: 200px !important;
+    margin: 15px auto;
+  }
+  .loginLogo {
+    position: absolute;
+    top: 28px;
+    left: 38px;
+    img {
+      width: 236px;
+      height: 52px;
+    }
+  }
   .main {
     width: 455px !important;
     height: 343px !important;
@@ -137,12 +128,22 @@
     }
   }
 }
-.ant-pro-form-login-main {
-  width: unset !important;
-  margin: 15px auto;
-}
+
 // ipad pro
 @media screen and (min-width: 481px) and (max-width: 767px) {
+  .ant-pro-form-login-main {
+    width: 200px !important;
+    margin: 15px auto;
+  }
+  .loginLogo {
+    position: absolute;
+    top: 18px;
+    left: 23px;
+    img {
+      width: 147px;
+      height: 32px;
+    }
+  }
   .content {
     display: flex;
     flex-direction: column;
@@ -191,6 +192,19 @@
 
 // 手机等小屏设备宽度
 @media screen and (min-width: 320px) and (max-width: 480px) {
+  .ant-pro-form-login-main {
+    width: 200px !important;
+    margin: 15px auto;
+  }
+  .loginLogo {
+    position: absolute;
+    top: 18px;
+    left: 23px;
+    img {
+      width: 147px;
+      height: 32px;
+    }
+  }
   .content {
     display: flex;
     flex-direction: column;

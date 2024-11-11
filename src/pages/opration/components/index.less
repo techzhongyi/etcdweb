@@ -3,6 +3,7 @@
   font-size: 20px;
   font-weight: 700;
   padding: 10px;
+  color: #fff;
 }
 .env-content{
   display: flex;
@@ -90,4 +91,46 @@
 .textarea.ant-input{
   min-height: 300px!important;
   height: 300px!important;
+}
+
+.logs-content{
+  display: flex;
+  align-items: flex-start;
+  height: 500px;
+  .log-list-select{
+    margin-right: 20px;
+    background-color: #263238;
+    border: 1px solid #d9d9d9;
+    height: 500px;
+    display: flex;
+    color: #fff;
+    flex-direction: column;
+    .log-content-title{
+      width: 200px;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 5px 20px;
+      border-bottom: 1px solid #d9d9d9;
+    }
+    .log-item-list{
+      >div{
+        padding: 3px 20px;
+        font-size: 18px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 1px solid #d9d9d9;
+      }
+      .item-active{
+        background-color: #2a2a2a;
+      }
+      >div:hover{
+        background-color: #2a2a2a;
+      }
+    }
+  }
+}
+.service-select-content{
+  width: calc(100% - 200px);
+  border: 1px solid #d9d9d9;
+  height: 100vh;
 }

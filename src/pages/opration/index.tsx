@@ -17,7 +17,11 @@ import ConfigModal from './components/configModal';
 import EnvConfigModal from './components/envConfigModal';
 import VersionDetailModal from './components/versionDetailModal';
 import { getOpVersionListAPI, getCommentVersionAPI, getRevisionVersionAPI } from '@/services/version';
+import moment from 'moment';
 import CommentModal from './components/commentModal';
+import ApplyDownModal from './components/applyDownModal';
+import { editEnvConfigAPI } from '@/services/envConfig';
+import PortModal from './components/portModal';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -31,7 +35,7 @@ const Index: React.FC = () => {
   const [isDone, setIsDone] = useState(false)
   const [applyIsDone, setApplyIsDone] = useState(false)
   const [refreshData, setRefreshData] = useState<string>('');
-  const [applyData, setApplyData] = useState<string>('');
+  // const [applyData, setApplyData] = useState<string>('');
   const [versionList, setVersionList] = useState([])
   const [serviceList, setServiceList] = useState([])
   const [codeLog, setCodeLog] = useState<string>('');
@@ -55,6 +59,16 @@ const Index: React.FC = () => {
   const [record5, setRecord5] = useState<any>({});
   const [visible6, setVisible6] = useState<boolean>(false);
   const [record6, setRecord6] = useState<any>({});
+  const [visible7, setVisible7] = useState<boolean>(false);
+  const [record7, setRecord7] = useState<any>({});
+  const [visible8, setVisible8] = useState<boolean>(false);
+  const [record8, setRecord8] = useState<any>({});
+  const [infoDetail, setInfoDetail] = useState<any>({
+    stsd: null,
+    success: '',
+    info: '',
+    error: ''
+  });
   // apply Modal
   const isShowModal = (show: boolean) => {
     setVisible(show);
@@ -65,29 +79,41 @@ const Index: React.FC = () => {
     setRecord1(versionList[0])
   };
   // logDetail Modal
-  const isShowModal2 = (show: boolean,row?:any) => {
+  const isShowModal2 = (show: boolean, row?: any) => {
     setVisible2(show);
     setRecord2(row)
   };
   // config Modal
-  const isShowModal3 = (show: boolean,row?:any) => {
+  const isShowModal3 = (show: boolean, row?: any) => {
     setVisible3(show);
     setRecord3(row)
   };
   // envConfig Modal
-  const isShowModal4 = (show: boolean,row?:any) => {
+  const isShowModal4 = (show: boolean, row?: any) => {
     setVisible4(show);
     setRecord4(row)
   };
   // envConfig Modal
-  const isShowModal5 = (show: boolean,row?:any) => {
+  const isShowModal5 = (show: boolean, row?: any) => {
     setVisible5(show);
     setRecord5(row)
   };
   // comment Modal
-  const isShowModal6 = (show: boolean,row?:any) => {
+  const isShowModal6 = (show: boolean, row?: any) => {
     setVisible6(show);
     setRecord6(row)
+  };
+  const isShowModal7 = (show: boolean) => {
+    setVisible7(show);
+    setRecord7({
+      env: getStorage('env'),
+      organize: history?.location?.query?.organize
+    });
+  };
+  // port Modal
+  const isShowModal8 = (show: boolean, row?: any) => {
+    setVisible8(show);
+    setRecord8(row)
   };
   // 保持步骤心跳
   const longRefreshstart = () => {
@@ -109,7 +135,7 @@ const Index: React.FC = () => {
   const setWebShhRefresh = async (env) => {
     const data = {
       env: env ? env : getStorage('env'),
-      organize: getStorage('organize')
+      organize: history?.location?.query?.organize
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhRefresh = await webSocket('/devopsCore/refresh', data);
@@ -162,11 +188,10 @@ const Index: React.FC = () => {
     }, 3000);
   };
   // 发送请求
-  let applyData_ = ''
   const setWebShhApply = async (env) => {
     const data = {
       env: env ? env : getStorage('env'),
-      organize: getStorage('organize')
+      organize: history?.location?.query?.organize
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhApply = await webSocket('/devopsCore/apply', data);
@@ -181,15 +206,28 @@ const Index: React.FC = () => {
           return
         }
         const _data = JSON.parse(recv.data)
-        setApplyIsDone(!(_data.IsDone))
+        if (_data.Step >= 0 && (!_data.IsDone)) {
+          setApplyStep(_data.Step+2)
+          setApplyIsDone(!(_data.IsDone))
+        }else{
+          setApplyIsDone(!(_data.IsDone))
+        }
+        if(_data.Step >= 0 && (_data.IsDone)){
+          setApplyStep(_data.Step+3)
+          getApplyResult()
+        }
+
+        if ((!_data.IsDone) && _data.Msg != '') {
+          setApplyBotText(_data.Msg)
+        }
         if (_data.NeedSqlConfirm) {
-          isShowModal1(true)
+          isShowModal7(true)
         }
-        if (_data.Msg == '') {
-          return
-        }
-        applyData_ += (_data.Msg) + '<br/>';
-        setApplyData(applyData_)
+        // if (_data.Msg == '') {
+        //   return
+        // }
+        // applyData_ += (_data.Msg) + '<br/>';
+        // setApplyData(applyData_)
       } else {
         // zsentry.consume(recv.data);
       }
@@ -244,7 +282,7 @@ const Index: React.FC = () => {
     webShh.onerror = function () {
       webShh?.close();
       webShh = null;
-      setWebShh(getStorage('env'))
+      // setWebShh(getStorage('env'))
     }
   };
   // 刷新
@@ -258,47 +296,84 @@ const Index: React.FC = () => {
   const onFinish = async (value) => {
     setApplyStep(1)
     setApplyIsDone(true)
-    setApplyData('')
+    // setApplyData('')
     isShowModal(false)
     webShhApply.send('apply??' + value.desc)
   }
   // 修订版本
   const onFinish1 = async (value) => {
     const params = {
-      organize:record1.organize,
-      env:getStorage('env'),
-      branch:record1.branch,
-      revision:value.revision,
+      organize: record1.organize,
+      env: getStorage('env'),
+      branch: record1.branch,
+      revision: value.revision,
     }
     const { status, msg } = await getRevisionVersionAPI(params)
-    if(status === 0){
+    if (status === 0) {
       isShowModal1(false)
       message.success('版本修订成功')
       getVersionList()
-    }else{
+    } else {
       message.error(msg)
     }
   }
   // env配置
-  const onFinish4 = async () => {
-
+  const onFinish4 = async (newCode: string) => {
+    const param = {
+      env: getStorage('env'),
+      sname:record4.sname,
+      envs: newCode,
+      organize: history?.location?.query?.organize
+    }
+    console.log(param)
+    const {status, msg } = await editEnvConfigAPI(param)
+    if (status === 0) {
+      isShowModal4(false)
+      message.success('修改成功')
+    } else {
+      message.warning(msg)
+    }
   }
   // 评论
   const onFinish6 = async (value) => {
     const params = {
-      organize:record6.organize,
-      env:getStorage('env'),
-      branch:record6.branch,
-      content:value.content,
+      organize: record6.organize,
+      env: getStorage('env'),
+      branch: record6.branch,
+      content: value.content,
     }
     const { status, msg } = await getCommentVersionAPI(params)
-    if(status === 0){
+    if (status === 0) {
       isShowModal6(false)
       message.success('评论成功')
       getVersionList()
-    }else{
+    } else {
       message.error(msg)
     }
+  }
+  const onFinish7 = async (value, type) => {
+    console.log(value)
+    const params = {
+      env: getStorage('env'),
+      organize: history?.location?.query?.organize,
+      sqls: value,
+      agree: type?'no':'yes'
+    }
+    const { status, msg } = await finishedSqlconfirmAPI(params)
+    if (status == 0) {
+      isShowModal7(false)
+    } else {
+      message.error(msg)
+    }
+  }
+   // 获取apply执行结果
+  const getApplyResult = async () => {
+    const params = {
+      env:  getStorage('env'),
+      organize: history?.location?.query?.organize,
+    }
+    const { data } = await getFinishedLastugpAPI(params)
+    setInfoDetail(data)
   }
   useEffect(() => {
     setWebShh(getStorage('env'))
@@ -306,6 +381,7 @@ const Index: React.FC = () => {
     setWebShhRefresh(getStorage('env'))
     getServiceList()
     getVersionList()
+    getApplyResult()
   }, [])
   let befortop = 0
 
@@ -324,8 +400,8 @@ const Index: React.FC = () => {
     const params = {
       env: getStorage('env'),
       // branch: history?.location?.query?.branch,
-      // organize: history?.location?.query?.organize,
-      organize: 'gkzyrent',
+      organize: history?.location?.query?.organize,
+      // organize: 'gkzyrent',
     }
     const { data: { items } } = await getOpVersionListAPI(params)
     setVersionList(items)
@@ -364,6 +440,7 @@ const Index: React.FC = () => {
       dataIndex: 'bootupts',
       align: 'center',
       key: 'bootupts',
+      render: (_, record) => record.bootupts ? moment(record.bootupts * 1000).format('YYYY-MM-DD HH:mm') : '--',
     },
     {
       title: '镜像时间',
@@ -388,10 +465,10 @@ const Index: React.FC = () => {
       align: 'center',
       render: (_, row: any) => (
         <Space>
-          <a onClick={() => {isShowModal2(true,row)}}>日志</a>
-          <a onClick={() => {isShowModal3(true,row)}}>配置</a>
-          <a onClick={() => {isShowModal3(true,row)}}>接口</a>
-          <a onClick={() => {isShowModal4(true,row)}}>ENV</a>
+          <a onClick={() => { isShowModal2(true, row) }}>日志</a>
+          <a onClick={() => { isShowModal3(true, row) }}>配置</a>
+          <a onClick={() => { isShowModal8(true, row) }}>接口</a>
+          <a onClick={() => { isShowModal4(true, row) }}>ENV</a>
         </Space>
       ),
     },
@@ -408,6 +485,7 @@ const Index: React.FC = () => {
       dataIndex: 'revision',
       key: 'revision',
       align: 'center',
+      ellipsis: true
     },
     {
       title: '修订次数',
@@ -430,21 +508,22 @@ const Index: React.FC = () => {
     {
       title: '操作',
       align: 'center',
-      render: (_,row) => (
+      render: (_, row) => (
         <Space>
-          <a onClick={() => {isShowModal5(true,row)}}>详情</a>
-          <a onClick={() => {isShowModal6(true,row)}}>评论</a>
+          <a onClick={() => { isShowModal5(true, row) }}>详情</a>
+          <a onClick={() => { isShowModal6(true, row) }}>评论</a>
         </Space>
       ),
     },
   ];
   return (
     <div className='page-container'>
+      {/* <Button onClick={() => { isShowModal7(true)}}>7777</Button> */}
       <EtdcHeader />
       <div className='version-info'>
-          <div>项目名称: {history?.location?.query?.organize}</div>
-          <div>版本号: {history?.location?.query?.branch}</div>
-          <div>环境:{getStorage('env')}</div>
+        <div>项目名称: {history?.location?.query?.organize}</div>
+        <div>版本号: {history?.location?.query?.branch}</div>
+        <div>环境:{getStorage('env')}</div>
       </div>
       <div className='page-wrap'>
         <div className='service-list'>
@@ -461,7 +540,7 @@ const Index: React.FC = () => {
         </div>
         <div className='version-list'>
           <div className='tables-titles'>
-            <div>版本列表</div>
+            <div>Version</div>
             <div><Button type="primary" onClick={() => {
               isShowModal1(true)
             }}>修订版本</Button></div>
@@ -523,19 +602,23 @@ const Index: React.FC = () => {
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: applyStep == 3 ? '#11BBAA' : '' }}>Sql gen</div>
               <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql confirm</div>
+              <div style={{ color: applyStep == 4? '#11BBAA' : '' }}>Sql confirm</div>
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
             </div>
           </div>
           <div className='opration-apply-content'>
             <div className='apply-log-box'>
-              {
-                <div id='apply-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: applyTopText }}></div>
-              }
+              <div>上次执行结果:</div>
+              <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
+                <div>标题: {infoDetail.info}</div>
+                <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
+                {
+                  infoDetail.success != 'yes' && <div>失败原因: {infoDetail.error}</div>
+                }
             </div>
             <div className='apply-line-box'>
-            {
+              {
                 <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: applyBotText }}></div>
               }
             </div>
@@ -587,6 +670,7 @@ const Index: React.FC = () => {
           visible={visible3}
           isShowModal={isShowModal3}
           record={record3}
+          branch={history?.location?.query?.branch}
         />
       )}
       {!visible4 ? (
@@ -616,6 +700,26 @@ const Index: React.FC = () => {
           isShowModal={isShowModal6}
           record={record6}
           onFinish={onFinish6}
+        />
+      )}
+      {!visible7 ? (
+        ''
+      ) : (
+        <ApplyDownModal
+          visible={visible7}
+          isShowModal={isShowModal7}
+          onFinish={onFinish7}
+          record={record7}
+        />
+      )}
+      {!visible8 ? (
+        ''
+      ) : (
+        <PortModal
+          visible={visible8}
+          isShowModal={isShowModal8}
+          record={record8}
+          branch={history?.location?.query?.branch}
         />
       )}
     </div>

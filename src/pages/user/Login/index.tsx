@@ -30,13 +30,13 @@ const Login: React.FC = () => {
   const fetchUserInfo = async (data: any) => {
     if (data) {
       const array: { label: any; value: any }[] = [];
-      data.env.map(item => {
-        array.push({ label: item.value, value: item.name });
-      })
+      // data.env.map(item => {
+      //   array.push({ label: item.value, value: item.name });
+      // })
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       await setInitialState((s) => ({
         ...s,
-        currentUser: { ...data, extraArray: array, defaultEnv: array[0].value },
+        currentUser: { ...data},
       }));
     }
   };
@@ -52,7 +52,7 @@ const Login: React.FC = () => {
       if (status === 0) {
         message.success('登录成功！');
         setStorage('token', token);
-        setStorage('organize', values.organize);
+        // setStorage('organize', values.organize);
         setStorage('p_secret', values.password);
         // setStorage('user_info', data.__user_info__);
         // setStorage('user_info', {name: values.username});
@@ -111,7 +111,7 @@ const Login: React.FC = () => {
             {userLoginState != 0 && <LoginMessage content={userLoginMsg} />}
             {
               <>
-                <ProFormSelect
+                {/* <ProFormSelect
                   width='lg'
                   name="organize"
                   fieldProps={{
@@ -121,9 +121,9 @@ const Login: React.FC = () => {
                   request={() => getList()}
                   placeholder="请选择项目名称"
                   rules={[{ required: true, message: '请选择项目名称!' }]}
-                />
+                /> */}
                 <ProFormText
-                 width='lg'
+                  width='lg'
                   className="phoneInput"
                   fieldProps={{
                     autoFocus: true,
@@ -140,7 +140,7 @@ const Login: React.FC = () => {
                   ]}
                 />
                 <ProFormText.Password
-                 width='lg'
+                  width='lg'
                   placeholder="密码"
                   fieldProps={{
                     size: 'large',

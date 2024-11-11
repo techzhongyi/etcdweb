@@ -32,3 +32,18 @@ export async function getRevisionVersionAPI(options: any) {
     b:'revision'
   });
 }
+/** service 配置 GET /devopsCore/sconf */
+export async function getSconfAPI(options: any) {
+  return request('/devopsCore/sconf', {
+    method: 'GET',
+    params: options,
+  });
+}
+/** service 接口 GET /devopsCore/sconf */
+export async function getApiAPI(options: any) {
+  return request('/devopsCore/api', {
+    method: 'GET',
+    params: options,
+  });
+}
+

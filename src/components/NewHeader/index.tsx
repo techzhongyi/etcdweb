@@ -6,7 +6,7 @@ import { history, useModel } from 'umi';
 import logo from '../../../public/icons/new_logo.png';
 import user_icon from '../../../public/icons/user_icon.png';
 import { clearAllStorage } from '@/utils/storage';
-import { message } from 'antd';
+import { Popconfirm, message } from 'antd';
 const EtdcHeader: React.FC = (props) => {
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentUser } = initialState;
@@ -26,7 +26,7 @@ const EtdcHeader: React.FC = (props) => {
   }
   return (
     <div className='page-header'>
-      <div className='page-header-logo' onClick={() => {goHome()}}><img src={logo} alt="" /></div>
+      <div className='page-header-logo' onClick={() => { goHome() }}><img src={logo} alt="" /></div>
       <div className='page-header-title'>服务监控治理CICD平台</div>
       <div className='page-header-action'>
         <div>
@@ -34,7 +34,16 @@ const EtdcHeader: React.FC = (props) => {
           <div className='user-name'>{currentUser.name}</div>
         </div>
         <div>
-          <LogoutOutlined onClick={() => { logout() }} style={{ fontSize: '30px' }} />
+          <Popconfirm
+            onConfirm={() => {logout()}}
+            key="popconfirm"
+            title="确认退出登录?"
+            okText="是"
+            cancelText="否"
+          >
+            <LogoutOutlined style={{ fontSize: '30px' }} />
+          </Popconfirm>
+
         </div>
       </div>
     </div>

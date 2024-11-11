@@ -2,12 +2,30 @@ import React, { useEffect,useState } from 'react';
 import { Button, Modal } from 'antd';
 import { detectOS } from '@/utils/common';
 import './index.less';
+import { getSconfAPI } from '@/services/version';
 const ConfigModal: React.FC<any> = (props: any) => {
-  const { visible, isShowModal,record } = props;
+  const { visible, isShowModal,record,branch } = props;
   const [isScroll, setIsScroll] = useState(false)
+  const [conf, setConf] = useState('')
   const onModealCancel = () => {
     isShowModal(false);
   };
+  const getDetail = async () => {
+    const params = {
+      env: record.env,
+      organize: record.organize,
+      branch,
+      sname: record.sname
+    }
+    const { data: {conf} } = await getSconfAPI(params)
+    setConf(conf)
+  }
+  useEffect(() => {
+    if(record){
+      getDetail()
+    }
+  },[record])
+  let befortop = 0
   useEffect(() => {
     const div = document.getElementById('log-box')
     window.addEventListener('scroll', () => {
@@ -29,10 +47,10 @@ const ConfigModal: React.FC<any> = (props: any) => {
     if (div && !isScroll) {
       div.scrollTop = div.scrollHeight
     }
-  }, [record])
+  }, [])
   return (
     <Modal
-      title='日志'
+      title='配置详情'
       width={766}
       footer={[
         <Button key="back" onClick={onModealCancel}>
@@ -46,7 +64,7 @@ const ConfigModal: React.FC<any> = (props: any) => {
     >
       <div className='log-box'>
         {
-          <div id='log-box' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: 12313312 }}></div>
+          <div id='log-box' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: conf }}></div>
         }
       </div>
     </Modal>

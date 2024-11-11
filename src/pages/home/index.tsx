@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
-import './index.less'
+import './index.less';
+import { history, useModel } from 'umi';
 import { webSocket } from '@/utils/socket';
-import { useModel } from 'umi';
 import { setStorage, getStorage } from '@/utils/storage';
 import eventBus from '@/utils/eventBus';
 import green_cloud from '../../../public/icons/ectd/green_cloud.png'
@@ -17,7 +17,7 @@ const Index: React.FC = () => {
   const { initialState } = useModel('@@initialState');
   const { extraArray, defaultEnv } = initialState?.currentUser
   const [initDefaultEnv, setInitDefaultEnv] = useState(getStorage('env') || defaultEnv)
-  const [dataList, setDataList] = useState([])
+  const [dataList, setDataList] = useState<any[]>([])
 
   useEffect(() => {
     if (!getStorage('env')) {
@@ -95,26 +95,17 @@ const Index: React.FC = () => {
 
   }, [])
   // toOpratipn
-  const toOpratipn = () => {
-    history.replace({
+  const toOpratipn = (organize,branch) => {
+    history.push({
       pathname: '/opration',
+      query: {
+        organize,
+        branch
+      },
     })
   }
   return (
     <div className='page-container'>
-      {/* <div className='page-header'>
-        <div className='page-header-logo'><img src={logo} alt="" /></div>
-        <div className='page-header-title'>服务监控治理CICD平台</div>
-        <div className='page-header-action'>
-          <div>
-            <div className='user-icon'><img src={user_icon} alt="" /></div>
-            <div className='user-name'>{currentUser.name}</div>
-          </div>
-          <div>
-            <LogoutOutlined onClick={() => { logout() }} style={{ fontSize: '30px' }} />
-          </div>
-        </div>
-      </div> */}
       <EtdcHeader />
       <div className='home-select-env'>
         <Select
@@ -125,240 +116,42 @@ const Index: React.FC = () => {
         />
       </div>
       <div className='home-content'>
-        <div className='home-content-list' onClick={() => {toOpratipn()}}>
-          <div className='list-title'>
-            <div>Gkzyrent.node1</div>
-            <div>CPU:90%,MEM:40%,IO:XXX</div>
-            <div>V2.0</div>
-          </div>
-          <div className='list-content'>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
+        {
+          dataList.map(item => {
+            return (
+              <div className='home-content-list' onClick={() => { toOpratipn(item.organize,item.sourcebranch) }}>
+                <div className='list-title'>
+                  <div>{item.organize}:{item.name}({item.ip})</div>
+                  <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
+                  <div>{item.sourcebranch}</div>
+                </div>
+                <div className={['list-content',
+                  item.health.status == 3
+                    ? 'list-content-gray'
+                    : item.health.status == 2
+                      ? 'list-content-red'
+                      : 'list-content-green',
+                ].join(' ')}>
+                  {
+                    item.services.map(item_ => {
+                      return (
+                        <div className='list-item'>
+                          <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+                          <div className='list-item-text'>
+                            <div className='text-title'>{item_.sname}</div>
+                            <div className='text-status'>{item.status == 1 ? '正常' : item.status == 2 ? '失联' : '故障'}</div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  }
+                </div>
               </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={gray_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={red_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className='home-content-list'>
-          <div className='list-title'>
-            <div>Gkzyrent.node1</div>
-            <div>CPU:90%,MEM:40%,IO:XXX</div>
-            <div>V2.0</div>
-          </div>
-          <div className='list-content'>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={gray_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={red_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className='home-content-list'>
-          <div className='list-title'>
-            <div>Gkzyrent.node1</div>
-            <div>CPU:90%,MEM:40%,IO:XXX</div>
-            <div>V2.0</div>
-          </div>
-          <div className='list-content'>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={gray_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-            <div className='list-item'>
-              <div className='list-item-icon'><img src={red_cloud} alt="" /></div>
-              <div className='list-item-text'>
-                <div className='text-title'>HttpCore</div>
-                <div className='text-status'>健康</div>
-              </div>
-            </div>
-          </div>
-        </div>
+            )
+          })
+        }
       </div>
     </div>
-    // <PageContainer
-    //   ghost
-    //   header={{
-    //     title: ' ',
-    //     breadcrumb: {},
-    //   }}
-    // >
-    //   <Card style={{ marginBottom: '20px' }}>
-    //     <div className='top-search'>
-    //       <div className='top-search-left'>
-    //         {/* <div className='top-search-label'>服务器名称:</div>
-    //         <div><Input placeholder="请输入服务器名称" allowClear={true} onChange={(e) => { licenseChange(e) }} /></div> */}
-    //       </div>
-    //       <div className='top-search-right'>
-    //         <div>
-    //           <div className='green'></div>
-    //           <div className='text'>正常</div>
-    //         </div>
-    //         <div>
-    //           <div className='red'></div>
-    //           <div className='text'>异常</div>
-    //         </div>
-    //         <div>
-    //           <div className='yellow'></div>
-    //           <div className='text'>失联</div>
-    //         </div>
-    //       </div>
-    //     </div>
-    //     <div className='node-wrap'>
-    //       {
-    //         dataList.map(item => {
-    //           return (
-    //             <div className='node-list'>
-    //               <div className='node-title'>{item.name}</div>
-    //               <div className='square-list'>
-    //                 {
-    //                   item.services.map(item_ => {
-    //                     return (
-    //                       <div className={item_.health === 0 ? 'square-item-green' : item_.health === 1 ? 'square-item-red' : 'square-item-yellow'}>
-    //                         {item_.sname}
-    //                       </div>
-    //                     )
-    //                   })
-    //                 }
-    //               </div>
-    //             </div>
-    //           )
-    //         })
-    //       }
-    //     </div>
-    //   </Card>
-    //   <ProTable<any>
-    //     bordered
-    //     columns={columns}
-    //     actionRef={actionRef}
-    //     dataSource={dataList}
-    //     editable={{
-    //       type: 'multiple',
-    //     }}
-    //     columnsState={{
-    //       persistenceKey: 'pro-table-singe-demos',
-    //       persistenceType: 'localStorage',
-    //     }}
-    //     rowKey="id"
-    //     search={false}
-    //     pagination={{
-    //       pageSize: pageSize,
-    //       showSizeChanger: true,
-    //       onShowSizeChange: (current, pageSize) => {
-    //         setPageSize(pageSize);
-    //       },
-    //     }}
-    //     options={false}
-    //     dateFormatter="string"
-    //     headerTitle="配置列表"
-    //     toolBarRender={() => []}
-    //   />
-    //   {/* {!visible ? (
-    //     ''
-    //   ) : (
-    //     <ConfigAddOrEditModal
-    //       visible={visible}
-    //       isShowModal={isShowModal}
-    //       onFinish={onFinish}
-    //       record={record}
-    //       editId={editId}
-    //     />
-    //   )}
-    //   {!visible1 ? (
-    //     ''
-    //   ) : (
-    //     <ComparesModal
-    //       visible={visible1}
-    //       isShowModal={isShowModal1}
-    //       onFinish={onFinish1}
-    //       record={record}
-    //       editId={editId}
-    //     />
-    //   )} */}
-    // </PageContainer>
   );
 };
 export default Index;

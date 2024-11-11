@@ -1,8 +1,12 @@
-.page-container {
+.page-container{
   background-image: url(../../../public/icons/homeBg.png);
   background-repeat: no-repeat;
   background-size: cover;
+  background-position: center;
   width: 100%;
+  height: 100%;
+  overflow: scroll;
+  padding-top: 72px;
 }
 
 .page-wrap {
@@ -127,6 +131,10 @@
   }
   .ant-table-tbody > tr.ant-table-placeholder:hover > td{
     background: unset;
+  }
+
+  .ant-table-tbody > tr.ant-table-row:hover > td{
+    background: #3e3e3e;
   }
   .ant-empty-normal {
     color: #fff;

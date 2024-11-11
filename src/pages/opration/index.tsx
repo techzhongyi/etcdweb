@@ -4,32 +4,292 @@ import './index.less';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
 import { getStorage } from '@/utils/storage';
-import eventBus from '@/utils/eventBus';
-import { finishedSqlconfirmAPI, getFinishedLastugpAPI } from '@/services/comservice';
-import moment from 'moment';
+import { history } from 'umi';
+import { finishedSqlconfirmAPI, getFinishedLastugpAPI, getServiceListAPI } from '@/services/comservice';
 import './index.less'
 import EtdcHeader from '@/components/NewHeader';
 import long_arrow from '../../../public/icons/ectd/long_arrow.png'
-
+import { getOpServiceListAPI } from '@/services/opration';
+import ApplyModal from './components/applyModal';
+import VersionAddOrEditModal from './components/versionAddModal';
+import LogDetailModal from './components/logDetailModal';
+import ConfigModal from './components/configModal';
+import EnvConfigModal from './components/envConfigModal';
+import VersionDetailModal from './components/versionDetailModal';
+let webShh: any = null,
+  timeoutObj: any = undefined,
+  serverTimeoutObj: any = undefined;
+let webShhApply: any = null,
+  timeoutObjApply: any = undefined,
+  serverTimeoutObjApply: any = undefined;
+let webShhRefresh: any = null,
+  timeoutObjRefresh: any = undefined,
+  serverTimeoutObjRefresh: any = undefined;
 const Index: React.FC = () => {
   const [isDone, setIsDone] = useState(false)
+  const [applyIsDone, setApplyIsDone] = useState(false)
+  const [refreshData, setRefreshData] = useState<string>('');
+  const [applyData, setApplyData] = useState<string>('');
   const [versionList, setVersionList] = useState([])
   const [serviceList, setServiceList] = useState([])
   const [codeLog, setCodeLog] = useState<string>('');
   const [isScroll, setIsScroll] = useState(false)
-  // const handleEvent = (env) => {
-  //   setWebShh(env)
-  //   // setWebShhApply(env)
-  //   getApplyResult(env)
-  // }
+  const [serviceStep, setServiceStep] = useState(-1)
+  const [applyStep, setApplyStep] = useState(-1)
+  const [refreshTopText, setRefreshTopText] = useState('')
+  const [refreshBotText, setRefreshBotText] = useState('')
+  const [applyTopText, setApplyTopText] = useState('')
+  const [applyBotText, setApplyBotText] = useState('')
+  const [visible, setVisible] = useState<boolean>(false);
+  const [visible1, setVisible1] = useState<boolean>(false);
+  const [visible2, setVisible2] = useState<boolean>(false);
+  const [record2, setRecord2] = useState<any>({});
+  const [visible3, setVisible3] = useState<boolean>(false);
+  const [record3, setRecord3] = useState<any>({});
+  const [visible4, setVisible4] = useState<boolean>(false);
+  const [record4, setRecord4] = useState<any>({});
+  const [visible5, setVisible5] = useState<boolean>(false);
+  const [record5, setRecord5] = useState<any>({});
+  const [visible6, setVisible6] = useState<boolean>(false);
+  const [record6, setRecord6] = useState<any>({});
+  // apply Modal
+  const isShowModal = (show: boolean) => {
+    setVisible(show);
+  };
+  // version Modal
+  const isShowModal1 = (show: boolean) => {
+    setVisible1(show);
+  };
+  // logDetail Modal
+  const isShowModal2 = (show: boolean,row?:any) => {
+    setVisible2(show);
+    setRecord2(row)
+  };
+  // config Modal
+  const isShowModal3 = (show: boolean,row?:any) => {
+    setVisible3(show);
+    setRecord3(row)
+  };
+  // envConfig Modal
+  const isShowModal4 = (show: boolean,row?:any) => {
+    setVisible4(show);
+    setRecord4(row)
+  };
+  // envConfig Modal
+  const isShowModal5 = (show: boolean,row?:any) => {
+    setVisible5(show);
+    setRecord5(row)
+  };
+  // comment Modal
+  const isShowModal6 = (show: boolean,row?:any) => {
+    setVisible5(show);
+    setRecord5(row)
+  };
+  // 保持步骤心跳
+  const longRefreshstart = () => {
+    //1、通过关闭定时器和倒计时进行重置心跳
+    clearInterval(timeoutObjRefresh);
+    clearTimeout(serverTimeoutObjRefresh);
+    // 2、每隔3s向后端发送一条商议好的数据
+    timeoutObjRefresh = setInterval(() => {
+      // webShhRefresh?.readyState == 1 正常连接
+      if (webShhRefresh?.readyState === 1) {
+        webShhRefresh.send('ping');
+      } else {
+        // webShhRefresh?.readyState != 1 连接异常 重新建立连接
+        setWebShhRefresh(getStorage('env'))
+      }
+    }, 3000);
+  };
+  // 发送请求
+  const setWebShhRefresh = async (env) => {
+    const data = {
+      env: env ? env : getStorage('env'),
+      organize: getStorage('organize')
+    }
+    // 必须设置格式为arraybuffer，zmodem 才可以使用
+    webShhRefresh = await webSocket('/devopsCore/refresh', data);
+    webShhRefresh.onopen = (res: any) => {
+      longRefreshstart()
+    };
+    // 回调
+    webShhRefresh.onmessage = function (recv: any) {
+      if (typeof (recv.data) === 'string') {
+        if (recv.data == 'pong' || recv.data == 'null') {
+          // setRefreshData('')
+          return
+        }
+        const _data = JSON.parse(recv.data)
+        if (_data.Step == 1 && (!_data.IsDone)) {
+          setServiceStep(3)
+        } else if (_data.Step == 1 && _data.IsDone) {
+          setServiceStep(4)
+          setIsDone(!(_data.IsDone))
+          setRefreshTopText(_data.Msg)
+        } else if (_data.Step === 0 && (!_data.IsDone)) {
+          setServiceStep(2)
+        }
+        if ((!_data.IsDone)) {
+          setRefreshBotText(_data.Msg)
+        }
+      } else {
+        // zsentry.consume(recv.data);
+      }
+    };
+    // 报错
+    webShhRefresh.onerror = function () {
+      webShhRefresh?.close();
+      webShhRefresh = null;
+    }
+  };
+  // 保持步骤心跳
+  const longApplystart = () => {
+    //1、通过关闭定时器和倒计时进行重置心跳
+    clearInterval(timeoutObjApply);
+    clearTimeout(serverTimeoutObjApply);
+    // 2、每隔30s向后端发送一条商议好的数据
+    timeoutObjApply = setInterval(() => {
+      if (webShhApply?.readyState === 1) {
+        webShhApply.send('ping');
+      } else {
+        // webShhRefresh?.readyState != 1 连接异常 重新建立连接
+        setWebShhApply(getStorage('env'))
+      }
+    }, 3000);
+  };
+  // 发送请求
+  let applyData_ = ''
+  const setWebShhApply = async (env) => {
+    const data = {
+      env: env ? env : getStorage('env'),
+      organize: getStorage('organize')
+    }
+    // 必须设置格式为arraybuffer，zmodem 才可以使用
+    webShhApply = await webSocket('/devopsCore/apply', data);
+    webShhApply.onopen = (res: any) => {
+      longApplystart();
+    };
+    // 回调
+    webShhApply.onmessage = function (recv: any) {
+      if (typeof (recv.data) === 'string') {
+        if (recv.data == 'pong' || recv.data == 'null') {
+          // setRefreshData('')
+          return
+        }
+        const _data = JSON.parse(recv.data)
+        setApplyIsDone(!(_data.IsDone))
+        if (_data.NeedSqlConfirm) {
+          isShowModal1(true)
+        }
+        if (_data.Msg == '') {
+          return
+        }
+        applyData_ += (_data.Msg) + '<br/>';
+        setApplyData(applyData_)
+      } else {
+        // zsentry.consume(recv.data);
+      }
+    };
+    // 报错
+    webShhApply.onerror = function () {
+      webShhApply?.close();
+      webShhApply = null;
+    }
+  };
+  // 保持日志心跳
+  const longstart = () => {
+    //1、通过关闭定时器和倒计时进行重置心跳
+    clearInterval(timeoutObj);
+    clearTimeout(serverTimeoutObj);
+    // 2、每隔30s向后端发送一条商议好的数据
+    timeoutObj = setInterval(() => {
+      if (webShh?.readyState === 1) {
+        webShh.send('ping');
+      } else {
+        // webShhRefresh?.readyState != 1 连接异常 重新建立连接
+        setWebShh(getStorage('env'))
+      }
+    }, 3000);
+  };
+  let data_ = '';
+  // 发送请求
+  const setWebShh = async (env) => {
+    const data = {
+      env: env ? env : getStorage('env'),
+      sname: 'devopsCore'
+    }
+    // 必须设置格式为arraybuffer，zmodem 才可以使用
+    webShh = await webSocket('/devopsCore/logsreal', data);
+    webShh.onopen = (res: any) => {
+      longstart();
+    };
+    // 回调
+    webShh.onmessage = function (recv: any) {
+      if (typeof (recv.data) === 'string') {
+        if (recv.data == 'pong' || recv.data == 'null') {
+          // setCodeLog('')
+          return
+        }
+        data_ += (recv.data + '<br/>');
+        setCodeLog(data_)
+      } else {
+        // zsentry.consume(recv.data);
+      }
+    };
+    // 报错
+    webShh.onerror = function () {
+      webShh?.close();
+      webShh = null;
+      setWebShh(getStorage('env'))
+    }
+  };
+  // 刷新
+  const refresh = () => {
+    setServiceStep(1)
+    setRefreshData('')
+    setIsDone(true)
+    webShhRefresh.send('refresh');
+  }
+  // 应用
+  const onFinish = async (value) => {
+    setApplyStep(1)
+    setApplyIsDone(true)
+    setApplyData('')
+    isShowModal(false)
+    webShhApply.send('apply??' + value.desc)
+  }
+  // 新建版本
+  const onFinish1 = async (value) => {
+
+  }
+  // env配置
+  const onFinish4 = async () => {
+
+  }
+  // 评论
+  const onFinish6 = async () => {
+
+  }
   useEffect(() => {
-    // setWebShh(getStorage('env'))
-    // setWebShhApply(getStorage('env'))
-    // setWebShhRefresh(getStorage('env'))
+    setWebShh(getStorage('env'))
+    setWebShhApply(getStorage('env'))
+    setWebShhRefresh(getStorage('env'))
+    getServiceList()
     // getApplyResult(getStorage('env'))
     // eventBus.on('envChange', (env) => { handleEvent(env) });
   }, [])
   let befortop = 0
+
+  // 获取service列表
+  const getServiceList = async () => {
+    const params = {
+      env: getStorage('env'),
+      branch: history?.location?.query?.branch,
+      organize: history?.location?.query?.organize,
+    }
+    const { data: { items } } = await getOpServiceListAPI(params)
+    setServiceList(items)
+  }
   useEffect(() => {
     const div = document.getElementById('log-content')
     window.addEventListener('scroll', () => {
@@ -55,43 +315,43 @@ const Index: React.FC = () => {
   const columns = [
     {
       title: '服务名称',
-      dataIndex: 'name',
+      dataIndex: 'sname',
       align: 'center',
-      key: 'name',
+      key: 'sname',
     },
     {
       title: '启动时间',
-      dataIndex: 'name',
+      dataIndex: 'bootupts',
       align: 'center',
-      key: 'name',
+      key: 'bootupts',
     },
     {
       title: '镜像时间',
-      dataIndex: 'name',
+      dataIndex: 'buildtime',
       align: 'center',
-      key: 'name',
+      key: 'buildtime',
     },
     {
       title: 'Sql升级时间',
-      dataIndex: 'name',
+      dataIndex: 'resptime',
       align: 'center',
-      key: 'name',
+      key: 'resptime',
     },
     {
       title: '创建时间',
-      dataIndex: 'name',
+      dataIndex: 'createtime',
       align: 'center',
-      key: 'name',
+      key: 'createtime',
     },
     {
       title: '操作',
       align: 'center',
-      render: () => (
+      render: (_, row: any) => (
         <Space>
-          <a>日志</a>
-          <a>配置</a>
-          <a>接口</a>
-          <a>ENV</a>
+          <a onClick={() => {isShowModal2(true,row)}}>日志</a>
+          <a onClick={() => {isShowModal3(true,row)}}>配置</a>
+          <a onClick={() => {isShowModal3(true,row)}}>接口</a>
+          <a onClick={() => {isShowModal4(true,row)}}>ENV</a>
         </Space>
       ),
     },
@@ -127,68 +387,16 @@ const Index: React.FC = () => {
   ];
   return (
     <div className='page-container'>
+      <Button onClick={() => {isShowModal5(true)}}>详情</Button>
       <EtdcHeader />
       <div className='page-wrap'>
-        <div className='opration-refresh'>
-          <div className='opration-refresh-title'>
-            <div>
-              <Button type="primary" loading={isDone} onClick={() => {
-                // refresh()
-              }}>Refresh</Button>
-            </div>
-            <div className='opration-refresh-step'>
-              <div>Start</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div>Repo Sync</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div>Project Scan</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div>End</div>
-            </div>
-          </div>
-          <div className='opration-refresh-content'>
-            <div className='refresh-log-box'>
-              {
-                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: 111 }}></div>
-              }
-            </div>
-            <div className='refresh-line-box'> 111</div>
-          </div>
-        </div>
-        <div className='opration-apply'>
-          <div className='opration-apply-title'>
-            <div>
-              <Button type="primary" loading={isDone} onClick={() => {
-                // refresh()
-              }}>Apply</Button>
-            </div>
-            <div className='opration-apply-step'>
-              <div>Start</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div>Devbootup</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div>Sql gen</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div>Sql confirm</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div>End</div>
-            </div>
-          </div>
-          <div className='opration-apply-content'>
-            <div className='apply-log-box'>
-              {
-                <div id='apply-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: 2222 }}></div>
-              }
-            </div>
-            <div className='apply-line-box'> 111</div>
-          </div>
-        </div>
         <div className='service-list'>
           <div className='tables-titles'>Service</div>
           <div>
             <Table
               rowKey={(record) => record.id}
-              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')} dataSource={serviceList}
+              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
+              dataSource={serviceList}
               pagination={false}
               columns={columns}
               scroll={{ y: 300 }} />
@@ -197,8 +405,8 @@ const Index: React.FC = () => {
         <div className='version-list'>
           <div className='tables-titles'>
             <div>版本列表</div>
-            <div><Button type="primary" loading={isDone} onClick={() => {
-              // refresh()
+            <div><Button type="primary" onClick={() => {
+              isShowModal1(true)
             }}>新建版本</Button></div>
           </div>
           <div>
@@ -213,6 +421,68 @@ const Index: React.FC = () => {
               scroll={{ y: 300 }} />
           </div>
         </div>
+        <div className='opration-refresh'>
+          <div className='opration-refresh-title'>
+            <div>
+              <Button type="primary" loading={isDone} onClick={() => {
+                refresh()
+              }}>{isDone ? 'waiting...' : 'Refresh'}</Button>
+            </div>
+            <div className='opration-refresh-step'>
+              <div style={{ color: serviceStep == 1 ? '#11BBAA' : '' }}>Start</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: serviceStep == 2 ? '#11BBAA' : '' }}>Repo Sync</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: serviceStep == 3 ? '#11BBAA' : '' }}>Project Scan</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: serviceStep == 4 ? '#11BBAA' : '' }}>End</div>
+            </div>
+          </div>
+          <div className='opration-refresh-content'>
+            <div className='refresh-log-box'>
+              {
+                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: refreshTopText }}></div>
+              }
+            </div>
+            <div className='refresh-line-box'>
+              {
+                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: refreshBotText }}></div>
+              }
+            </div>
+          </div>
+        </div>
+        <div className='opration-apply'>
+          <div className='opration-apply-title'>
+            <div>
+              <Button type="primary" loading={applyIsDone} onClick={() => {
+                isShowModal(true)
+              }}>{applyIsDone ? 'waiting...' : 'Apply'}</Button>
+            </div>
+            <div className='opration-apply-step'>
+              <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>bootup</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: applyStep == 3 ? '#11BBAA' : '' }}>Sql gen</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql confirm</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
+            </div>
+          </div>
+          <div className='opration-apply-content'>
+            <div className='apply-log-box'>
+              {
+                <div id='apply-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: applyTopText }}></div>
+              }
+            </div>
+            <div className='apply-line-box'>
+            {
+                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: applyBotText }}></div>
+              }
+            </div>
+          </div>
+        </div>
         <div className='log-content'>
           <div className='log-titles'>
             <div>日志</div>
@@ -224,6 +494,71 @@ const Index: React.FC = () => {
           </div>
         </div>
       </div>
+      {!visible ? (
+        ''
+      ) : (
+        <ApplyModal
+          visible={visible}
+          isShowModal={isShowModal}
+          onFinish={onFinish}
+        />
+      )}
+      {!visible1 ? (
+        ''
+      ) : (
+        <VersionAddOrEditModal
+          visible={visible1}
+          isShowModal={isShowModal1}
+          onFinish={onFinish1}
+        />
+      )}
+      {!visible2 ? (
+        ''
+      ) : (
+        <LogDetailModal
+          visible={visible2}
+          isShowModal={isShowModal2}
+          record={record2}
+        />
+      )}
+      {!visible3 ? (
+        ''
+      ) : (
+        <ConfigModal
+          visible={visible3}
+          isShowModal={isShowModal3}
+          record={record3}
+        />
+      )}
+      {!visible4 ? (
+        ''
+      ) : (
+        <EnvConfigModal
+          visible={visible4}
+          isShowModal={isShowModal4}
+          record={record4}
+          onFinish={onFinish4}
+        />
+      )}
+      {!visible5 ? (
+        ''
+      ) : (
+        <VersionDetailModal
+          visible={visible5}
+          isShowModal={isShowModal5}
+          record={record5}
+        />
+      )}
+      {!visible6 ? (
+        ''
+      ) : (
+        <CommentModal
+          visible={visible6}
+          isShowModal={isShowModal6}
+          record={record6}
+          onFinish={onFinish6}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FooterToolbar } from '@ant-design/pro-layout';
-import { Button, Card, message, Modal } from 'antd';
+import { Button, Card, message, Modal, Space } from 'antd';
 import './index.less'
 import CodeMirrorEditorModal from '@/components/CodeMirror';
 import { ProForm } from '@ant-design/pro-components';
@@ -10,7 +9,7 @@ import eventBus from '@/utils/eventBus';
 import { editEnvConfigAPI, getEnvConfigListAPI } from '@/services/envConfig';
 let newCode = ''
 const EnvConfigModal: React.FC<any> = (props: any) => {
-  const { visible, isShowModal,record, onFinish } = props;
+  const { visible, isShowModal, record, onFinish } = props;
   const onModealCancel = () => {
     isShowModal(false);
   };
@@ -83,67 +82,60 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
     <Modal
       title='ENV配置'
       width={1400}
-      footer={[
-        <Button key="back" onClick={onModealCancel}>
-          关闭
-        </Button>,
-      ]}
+      footer={null}
       open={visible}
       maskClosable={false}
       onCancel={onModealCancel}
       destroyOnClose={true}
     >
+
       <ProForm
         submitter={{
-          render: (props) => (
-            <FooterToolbar>
-              {/* <Button key="rest" onClick={() => history.push('/custom/lease')}>
-                取消
-              </Button> */}
-              <Button
-                type="primary"
-                key="submit2"
-                onClick={() => {
-                  props.form?.submit?.();
-                  // props.form?.validateFields().then(value=>{
-                  //   props.form?.submit?.();
-                  // }).catch()
-                }}
-              >
-                保存
-              </Button>
-            </FooterToolbar>
+          render: (props_) => (
+            <div style={{ textAlign: 'right' }}>
+              <Space>
+                <Button onClick={onModealCancel}>取消</Button>
+                <Button
+                  type="primary"
+                  key="submit"
+                  onClick={() => props_.form?.submit?.()}
+                >
+                  保存
+                </Button>
+              </Space>
+            </div>
           ),
         }}
         onFinish={onFinish}
         form={formObj}
       >
-          <div className='env-content'>
-            <div className='env-list-select'>
-              <div className='env-content-title'>微服务列表</div>
-              <div className='env-item-list'>
-                {
-                  servicesList.map(item => {
-                    return (
-                      <div className={activeIndex === item ? 'item-active' : ''} onClick={() => {
-                        selectSevices(item)
-                      }}>{item}</div>
-                    )
-                  })
-                }
-              </div>
-
-            </div>
-            <div className='envconfig-right-content'>
-              <CodeMirrorEditorModal
-                value={code}
-                language="javascript"
-                onChange={handleCodeChange}
-              />
-            </div>
+      <div className='env-content'>
+        <div className='env-list-select'>
+          <div className='env-content-title'>微服务列表</div>
+          <div className='env-item-list'>
+            {
+              servicesList.map(item => {
+                return (
+                  <div className={activeIndex === item ? 'item-active' : ''} onClick={() => {
+                    selectSevices(item)
+                  }}>{item}</div>
+                )
+              })
+            }
           </div>
-      </ProForm>
-    </Modal>
+
+        </div>
+        <div className='envconfig-right-content'>
+          <CodeMirrorEditorModal
+            value={code}
+            language="javascript"
+            onChange={handleCodeChange}
+            height={500}
+          />
+        </div>
+      </div>
+    </ProForm>
+    </Modal >
   );
 };
 export default EnvConfigModal;

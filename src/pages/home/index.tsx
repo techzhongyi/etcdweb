@@ -136,10 +136,10 @@ const Index: React.FC = () => {
                     item.services.map(item_ => {
                       return (
                         <div className='list-item'>
-                          <div className='list-item-icon'><img src={green_cloud} alt="" /></div>
+                          <div className='list-item-icon'><img src={item_.status == 1 ? green_cloud : item_.status == 2 ? gray_cloud : red_cloud} alt="" /></div>
                           <div className='list-item-text'>
                             <div className='text-title'>{item_.sname}</div>
-                            <div className='text-status'>{item.status == 1 ? '正常' : item.status == 2 ? '失联' : '故障'}</div>
+                            <div className='text-status'>{item_.status == 1 ? '正常' : item.status == 2 ? '失联' : '故障'}</div>
                           </div>
                         </div>
                       )

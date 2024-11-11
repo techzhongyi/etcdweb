@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Space, Table } from 'antd';
+import { Button, Space, Table, message } from 'antd';
 import './index.less';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
@@ -16,6 +16,8 @@ import LogDetailModal from './components/logDetailModal';
 import ConfigModal from './components/configModal';
 import EnvConfigModal from './components/envConfigModal';
 import VersionDetailModal from './components/versionDetailModal';
+import { getOpVersionListAPI, getCommentVersionAPI, getRevisionVersionAPI } from '@/services/version';
+import CommentModal from './components/commentModal';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -42,6 +44,7 @@ const Index: React.FC = () => {
   const [applyBotText, setApplyBotText] = useState('')
   const [visible, setVisible] = useState<boolean>(false);
   const [visible1, setVisible1] = useState<boolean>(false);
+  const [record1, setRecord1] = useState<boolean>(false);
   const [visible2, setVisible2] = useState<boolean>(false);
   const [record2, setRecord2] = useState<any>({});
   const [visible3, setVisible3] = useState<boolean>(false);
@@ -59,6 +62,7 @@ const Index: React.FC = () => {
   // version Modal
   const isShowModal1 = (show: boolean) => {
     setVisible1(show);
+    setRecord1(versionList[0])
   };
   // logDetail Modal
   const isShowModal2 = (show: boolean,row?:any) => {
@@ -82,8 +86,8 @@ const Index: React.FC = () => {
   };
   // comment Modal
   const isShowModal6 = (show: boolean,row?:any) => {
-    setVisible5(show);
-    setRecord5(row)
+    setVisible6(show);
+    setRecord6(row)
   };
   // 保持步骤心跳
   const longRefreshstart = () => {
@@ -258,25 +262,50 @@ const Index: React.FC = () => {
     isShowModal(false)
     webShhApply.send('apply??' + value.desc)
   }
-  // 新建版本
+  // 修订版本
   const onFinish1 = async (value) => {
-
+    const params = {
+      organize:record1.organize,
+      env:getStorage('env'),
+      branch:record1.branch,
+      revision:value.revision,
+    }
+    const { status, msg } = await getRevisionVersionAPI(params)
+    if(status === 0){
+      isShowModal1(false)
+      message.success('版本修订成功')
+      getVersionList()
+    }else{
+      message.error(msg)
+    }
   }
   // env配置
   const onFinish4 = async () => {
 
   }
   // 评论
-  const onFinish6 = async () => {
-
+  const onFinish6 = async (value) => {
+    const params = {
+      organize:record6.organize,
+      env:getStorage('env'),
+      branch:record6.branch,
+      content:value.content,
+    }
+    const { status, msg } = await getCommentVersionAPI(params)
+    if(status === 0){
+      isShowModal6(false)
+      message.success('评论成功')
+      getVersionList()
+    }else{
+      message.error(msg)
+    }
   }
   useEffect(() => {
     setWebShh(getStorage('env'))
     setWebShhApply(getStorage('env'))
     setWebShhRefresh(getStorage('env'))
     getServiceList()
-    // getApplyResult(getStorage('env'))
-    // eventBus.on('envChange', (env) => { handleEvent(env) });
+    getVersionList()
   }, [])
   let befortop = 0
 
@@ -289,6 +318,17 @@ const Index: React.FC = () => {
     }
     const { data: { items } } = await getOpServiceListAPI(params)
     setServiceList(items)
+  }
+  // 获取version列表
+  const getVersionList = async () => {
+    const params = {
+      env: getStorage('env'),
+      // branch: history?.location?.query?.branch,
+      // organize: history?.location?.query?.organize,
+      organize: 'gkzyrent',
+    }
+    const { data: { items } } = await getOpVersionListAPI(params)
+    setVersionList(items)
   }
   useEffect(() => {
     const div = document.getElementById('log-content')
@@ -359,36 +399,53 @@ const Index: React.FC = () => {
   const columns1 = [
     {
       title: '版本名称',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'branch',
+      key: 'branch',
       align: 'center',
     },
     {
       title: '版本描述',
-      dataIndex: 'age',
-      key: 'age',
+      dataIndex: 'revision',
+      key: 'revision',
+      align: 'center',
+    },
+    {
+      title: '修订次数',
+      dataIndex: 'rcount',
+      key: 'rcount',
+      align: 'center',
+    },
+    {
+      title: '评论次数',
+      dataIndex: 'ccount',
+      key: 'ccount',
       align: 'center',
     },
     {
       title: '修订时间',
-      dataIndex: 'address',
-      key: 'address',
+      dataIndex: 'ts',
+      key: 'ts',
       align: 'center',
     },
     {
       title: '操作',
       align: 'center',
-      render: () => (
+      render: (_,row) => (
         <Space>
-          <a>详情</a>
+          <a onClick={() => {isShowModal5(true,row)}}>详情</a>
+          <a onClick={() => {isShowModal6(true,row)}}>评论</a>
         </Space>
       ),
     },
   ];
   return (
     <div className='page-container'>
-      <Button onClick={() => {isShowModal5(true)}}>详情</Button>
       <EtdcHeader />
+      <div className='version-info'>
+          <div>项目名称: {history?.location?.query?.organize}</div>
+          <div>版本号: {history?.location?.query?.branch}</div>
+          <div>环境:{getStorage('env')}</div>
+      </div>
       <div className='page-wrap'>
         <div className='service-list'>
           <div className='tables-titles'>Service</div>
@@ -407,7 +464,7 @@ const Index: React.FC = () => {
             <div>版本列表</div>
             <div><Button type="primary" onClick={() => {
               isShowModal1(true)
-            }}>新建版本</Button></div>
+            }}>修订版本</Button></div>
           </div>
           <div>
             <Table
@@ -415,7 +472,8 @@ const Index: React.FC = () => {
                 emptyText: '', // 使用自定义组件作为“暂无数据”的提示
               }}
               rowKey={(record) => record.id}
-              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')} dataSource={versionList}
+              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
+              dataSource={versionList}
               pagination={false}
               columns={columns1}
               scroll={{ y: 300 }} />
@@ -509,6 +567,7 @@ const Index: React.FC = () => {
         <VersionAddOrEditModal
           visible={visible1}
           isShowModal={isShowModal1}
+          record={record1}
           onFinish={onFinish1}
         />
       )}

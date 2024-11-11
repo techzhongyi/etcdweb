@@ -5,5 +5,30 @@ export async function getOpVersionListAPI(options: any) {
   return request('/devopsCore/version', {
     method: 'GET',
     params: options,
+    b:'list'
+  });
+}
+/** 获取版本详情 GET /devopsCore/servicelist */
+export async function getOpVersionDetailAPI(options: any) {
+  return request('/devopsCore/version', {
+    method: 'GET',
+    params: options,
+    b:'detail'
+  });
+}
+/** 版本评论 PUT /devopsCore/servicelist */
+export async function getCommentVersionAPI(options: any) {
+  return request('/devopsCore/version', {
+    method: 'PUT',
+    data: options,
+    b:'comment'
+  });
+}
+/** 版本修订 PUT /devopsCore/servicelist */
+export async function getRevisionVersionAPI(options: any) {
+  return request('/devopsCore/version', {
+    method: 'PUT',
+    data: options,
+    b:'revision'
   });
 }

@@ -1,10 +1,11 @@
 import {
   ProForm,
-  ProFormSelect,
   ProFormTextArea,
 } from '@ant-design/pro-components';
 import { Button, Modal, Space } from 'antd';
 import { useEffect, useState } from 'react';
+import { getStorage } from '@/utils/storage';
+import { ProDescriptions } from '@ant-design/pro-components';
 
 const VersionAddOrEditModal: React.FC<any> = (
   props: any,
@@ -12,21 +13,7 @@ const VersionAddOrEditModal: React.FC<any> = (
   const [formObj] = ProForm.useForm();
   const { visible, isShowModal, onFinish, record, editId } = props;
   const [initialValues, setInitialValues] = useState(undefined);
-  const title = editId ? '编辑版本' : '创建版本'
-  const versionList = [
-    {
-      label: '主版本',
-      value: 1
-    },
-    {
-      label: '小版本',
-      value: 2
-    },
-    {
-      label: '修订版本',
-      value: 3
-    },
-  ]
+  const title = '版本修订'
   useEffect(() => {
     if (record) {
       setInitialValues({
@@ -69,26 +56,33 @@ const VersionAddOrEditModal: React.FC<any> = (
         initialValues={initialValues}
         form={formObj}
       >
-        <ProFormSelect
-          name="type"
-          width="lg"
-          options={versionList}
-          label="版本类型"
-          placeholder="请选择版本类型"
-          rules={[
-            {
-              required: true,
-              message: '请选择版本类型!',
-            },
-          ]}
-        />
+        <ProDescriptions column={4}>
+          <ProDescriptions.Item valueType="text" label="项目名称">
+            {record.organize}
+          </ProDescriptions.Item>
+          <ProDescriptions.Item valueType="text" label="版本号">
+            {record.branch}
+          </ProDescriptions.Item>
+          <ProDescriptions.Item valueType="text" label="环境">
+            {getStorage('env')}
+          </ProDescriptions.Item>
+        </ProDescriptions>
         <ProFormTextArea
-          label="描述"
-          name="remark"
+          label="修订"
+          name="revision"
           fieldProps={{
             maxLength: 499,
+            style:{
+              height: '300px'
+            }
           }}
-          width="lg"
+          width={500}
+          rules={[
+            {
+                required: true,
+                message: '请填写修订信息！',
+            }
+        ]}
         />
       </ProForm>
     </Modal>

@@ -5,7 +5,7 @@ import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
 import { getStorage } from '@/utils/storage';
 import { history } from 'umi';
-import { finishedSqlconfirmAPI, getFinishedLastugpAPI, getServiceListAPI } from '@/services/comservice';
+import { finishedSqlconfirmAPI, getFinishedLastugpAPI } from '@/services/comservice';
 import './index.less'
 import EtdcHeader from '@/components/NewHeader';
 import long_arrow from '../../../public/icons/ectd/long_arrow.png'
@@ -34,8 +34,6 @@ let webShhRefresh: any = null,
 const Index: React.FC = () => {
   const [isDone, setIsDone] = useState(false)
   const [applyIsDone, setApplyIsDone] = useState(false)
-  const [refreshData, setRefreshData] = useState<string>('');
-  // const [applyData, setApplyData] = useState<string>('');
   const [versionList, setVersionList] = useState([])
   const [serviceList, setServiceList] = useState([])
   const [codeLog, setCodeLog] = useState<string>('');
@@ -44,7 +42,6 @@ const Index: React.FC = () => {
   const [applyStep, setApplyStep] = useState(-1)
   const [refreshTopText, setRefreshTopText] = useState('')
   const [refreshBotText, setRefreshBotText] = useState('')
-  const [applyTopText, setApplyTopText] = useState('')
   const [applyBotText, setApplyBotText] = useState('')
   const [visible, setVisible] = useState<boolean>(false);
   const [visible1, setVisible1] = useState<boolean>(false);
@@ -91,7 +88,10 @@ const Index: React.FC = () => {
   // envConfig Modal
   const isShowModal4 = (show: boolean, row?: any) => {
     setVisible4(show);
-    setRecord4(row)
+    setRecord4({
+      env: getStorage('env'),
+      organize: history?.location?.query?.organize
+    });
   };
   // envConfig Modal
   const isShowModal5 = (show: boolean, row?: any) => {
@@ -127,14 +127,14 @@ const Index: React.FC = () => {
         webShhRefresh.send('ping');
       } else {
         // webShhRefresh?.readyState != 1 连接异常 重新建立连接
-        setWebShhRefresh(getStorage('env'))
+        setWebShhRefresh()
       }
     }, 3000);
   };
   // 发送请求
-  const setWebShhRefresh = async (env) => {
+  const setWebShhRefresh = async () => {
     const data = {
-      env: env ? env : getStorage('env'),
+      env: getStorage('env'),
       organize: history?.location?.query?.organize
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -146,7 +146,6 @@ const Index: React.FC = () => {
     webShhRefresh.onmessage = function (recv: any) {
       if (typeof (recv.data) === 'string') {
         if (recv.data == 'pong' || recv.data == 'null') {
-          // setRefreshData('')
           return
         }
         const _data = JSON.parse(recv.data)
@@ -183,14 +182,14 @@ const Index: React.FC = () => {
         webShhApply.send('ping');
       } else {
         // webShhRefresh?.readyState != 1 连接异常 重新建立连接
-        setWebShhApply(getStorage('env'))
+        setWebShhApply()
       }
     }, 3000);
   };
   // 发送请求
-  const setWebShhApply = async (env) => {
+  const setWebShhApply = async () => {
     const data = {
-      env: env ? env : getStorage('env'),
+      env:  getStorage('env'),
       organize: history?.location?.query?.organize
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -202,18 +201,17 @@ const Index: React.FC = () => {
     webShhApply.onmessage = function (recv: any) {
       if (typeof (recv.data) === 'string') {
         if (recv.data == 'pong' || recv.data == 'null') {
-          // setRefreshData('')
           return
         }
         const _data = JSON.parse(recv.data)
         if (_data.Step >= 0 && (!_data.IsDone)) {
-          setApplyStep(_data.Step+2)
+          setApplyStep(_data.Step + 2)
           setApplyIsDone(!(_data.IsDone))
-        }else{
+        } else {
           setApplyIsDone(!(_data.IsDone))
         }
-        if(_data.Step >= 0 && (_data.IsDone)){
-          setApplyStep(_data.Step+3)
+        if (_data.Step >= 0 && (_data.IsDone)) {
+          setApplyStep(_data.Step + 3)
           getApplyResult()
         }
 
@@ -255,9 +253,9 @@ const Index: React.FC = () => {
   };
   let data_ = '';
   // 发送请求
-  const setWebShh = async (env) => {
+  const setWebShh = async () => {
     const data = {
-      env: env ? env : getStorage('env'),
+      env: getStorage('env'),
       sname: 'devopsCore'
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -288,7 +286,6 @@ const Index: React.FC = () => {
   // 刷新
   const refresh = () => {
     setServiceStep(1)
-    setRefreshData('')
     setIsDone(true)
     webShhRefresh.send('refresh');
   }
@@ -321,12 +318,12 @@ const Index: React.FC = () => {
   const onFinish4 = async (newCode: string) => {
     const param = {
       env: getStorage('env'),
-      sname:record4.sname,
+      sname: record4.sname,
       envs: newCode,
       organize: history?.location?.query?.organize
     }
     console.log(param)
-    const {status, msg } = await editEnvConfigAPI(param)
+    const { status, msg } = await editEnvConfigAPI(param)
     if (status === 0) {
       isShowModal4(false)
       message.success('修改成功')
@@ -357,7 +354,7 @@ const Index: React.FC = () => {
       env: getStorage('env'),
       organize: history?.location?.query?.organize,
       sqls: value,
-      agree: type?'no':'yes'
+      agree: type ? 'no' : 'yes'
     }
     const { status, msg } = await finishedSqlconfirmAPI(params)
     if (status == 0) {
@@ -366,22 +363,39 @@ const Index: React.FC = () => {
       message.error(msg)
     }
   }
-   // 获取apply执行结果
+  // 获取apply执行结果
   const getApplyResult = async () => {
     const params = {
-      env:  getStorage('env'),
+      env: getStorage('env'),
       organize: history?.location?.query?.organize,
     }
     const { data } = await getFinishedLastugpAPI(params)
     setInfoDetail(data)
   }
   useEffect(() => {
-    setWebShh(getStorage('env'))
-    setWebShhApply(getStorage('env'))
-    setWebShhRefresh(getStorage('env'))
+    setWebShh()
+    setWebShhApply()
+    setWebShhRefresh()
     getServiceList()
     getVersionList()
     getApplyResult()
+    return () => {
+      clearInterval(timeoutObj);
+      clearTimeout(serverTimeoutObj);
+      clearInterval(timeoutObjApply);
+      clearTimeout(serverTimeoutObjApply);
+      clearInterval(timeoutObjRefresh);
+      clearTimeout(serverTimeoutObjRefresh);
+      if (webShh) {
+        webShh.close();
+      }
+      if (webShhApply) {
+        webShhApply.close();
+      }
+      if (webShhRefresh) {
+        webShhRefresh.close();
+      }
+    }
   }, [])
   let befortop = 0
 
@@ -428,12 +442,21 @@ const Index: React.FC = () => {
       div.scrollTop = div.scrollHeight
     }
   }, [codeLog])
+
   const columns = [
     {
       title: '服务名称',
       dataIndex: 'sname',
       align: 'center',
       key: 'sname',
+    },
+    {
+      title: '服务状态',
+      dataIndex: 'status',
+      key: 'status',
+      hideInSearch: true,
+      align: 'center',
+      render: (_, record) => record.status == 'lost' ? '失联' : record.status == 'good' ? '正常' : record.status == 'fault' ? '故障' : '--',
     },
     {
       title: '启动时间',
@@ -520,14 +543,17 @@ const Index: React.FC = () => {
     <div className='page-container'>
       {/* <Button onClick={() => { isShowModal7(true)}}>7777</Button> */}
       <EtdcHeader />
-      <div className='version-info'>
-        <div>项目名称: {history?.location?.query?.organize}</div>
-        <div>版本号: {history?.location?.query?.branch}</div>
-        <div>环境:{getStorage('env')}</div>
-      </div>
+
       <div className='page-wrap'>
         <div className='service-list'>
-          <div className='tables-titles'>Service</div>
+          <div className='tables-titles'>
+            <div>Service</div>
+            <div className='version-info'>
+              <div>项目名称: {history?.location?.query?.organize}</div>
+              <div>版本号: {history?.location?.query?.branch}</div>
+              <div>环境:{getStorage('env')}</div>
+            </div>
+          </div>
           <div>
             <Table
               rowKey={(record) => record.id}
@@ -602,7 +628,7 @@ const Index: React.FC = () => {
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: applyStep == 3 ? '#11BBAA' : '' }}>Sql gen</div>
               <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: applyStep == 4? '#11BBAA' : '' }}>Sql confirm</div>
+              <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql confirm</div>
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
             </div>
@@ -611,11 +637,11 @@ const Index: React.FC = () => {
             <div className='apply-log-box'>
               <div>上次执行结果:</div>
               <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
-                <div>标题: {infoDetail.info}</div>
-                <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
-                {
-                  infoDetail.success != 'yes' && <div>失败原因: {infoDetail.error}</div>
-                }
+              <div>标题: {infoDetail.info}</div>
+              <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
+              {
+                infoDetail.success != 'yes' && <div>失败原因: {infoDetail.error}</div>
+              }
             </div>
             <div className='apply-line-box'>
               {
@@ -630,7 +656,7 @@ const Index: React.FC = () => {
           </div>
           <div className='log-content-box'>
             {
-              <div id='log-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
+              <div id='log-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '800px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
             }
           </div>
         </div>

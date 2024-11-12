@@ -81,6 +81,9 @@ const Index: React.FC = () => {
     }
   };
   useEffect(() => {
+    if(!getStorage('env')){
+      setStorage('env','Dev')
+    }
     setWebShh()
     return () => {
       clearInterval(timeoutObj);

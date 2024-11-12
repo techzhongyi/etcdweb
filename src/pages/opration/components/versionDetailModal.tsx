@@ -22,9 +22,9 @@ const VersionDetailModal: React.FC<any> = (
       branch: record.branch
     }
     const { data: { applylogs, revisions, comments } } = await getOpVersionDetailAPI(params)
-    setApplylogs(applylogs)
-    setComments(comments)
-    setRevisions(revisions)
+    setApplylogs(applylogs || [])
+    setComments(comments || [])
+    setRevisions(revisions || [])
   }
   useEffect(() => {
     if (record) {

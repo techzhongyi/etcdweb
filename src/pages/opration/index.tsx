@@ -651,11 +651,10 @@ const Index: React.FC = () => {
                   <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
                   <div>标题: {infoDetail.info}</div>
                   <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
+                  {
+                    infoDetail.success != 'yes' && <div>失败原因: {infoDetail.error}</div>
+                  }
                 </>
-              }
-
-              {
-                (infoDetail.stsd &&infoDetail.success != 'yes') && <div>失败原因: {infoDetail.error}</div>
               }
             </div>
             <div className='apply-line-box'>

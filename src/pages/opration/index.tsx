@@ -45,7 +45,7 @@ const Index: React.FC = () => {
   const [applyBotText, setApplyBotText] = useState('')
   const [visible, setVisible] = useState<boolean>(false);
   const [visible1, setVisible1] = useState<boolean>(false);
-  const [record1, setRecord1] = useState<boolean>(false);
+  const [record1, setRecord1] = useState<any>({});
   const [visible2, setVisible2] = useState<boolean>(false);
   const [record2, setRecord2] = useState<any>({});
   const [visible3, setVisible3] = useState<boolean>(false);
@@ -68,6 +68,10 @@ const Index: React.FC = () => {
   });
   // apply Modal
   const isShowModal = (show: boolean) => {
+    if (!webShhApply) {
+      message.error('网络连接错误,请稍后再试...')
+      return
+    }
     setVisible(show);
   };
   // version Modal
@@ -189,7 +193,7 @@ const Index: React.FC = () => {
   // 发送请求
   const setWebShhApply = async () => {
     const data = {
-      env:  getStorage('env'),
+      env: getStorage('env'),
       organize: history?.location?.query?.organize
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -247,7 +251,7 @@ const Index: React.FC = () => {
         webShh.send('ping');
       } else {
         // webShhRefresh?.readyState != 1 连接异常 重新建立连接
-        setWebShh(getStorage('env'))
+        setWebShh()
       }
     }, 3000);
   };
@@ -285,12 +289,17 @@ const Index: React.FC = () => {
   };
   // 刷新
   const refresh = () => {
+    if (!webShhRefresh) {
+      message.error('网络连接错误,请稍后再试...')
+      return
+    }
     setServiceStep(1)
     setIsDone(true)
     webShhRefresh.send('refresh');
   }
   // 应用
   const onFinish = async (value) => {
+
     setApplyStep(1)
     setApplyIsDone(true)
     // setApplyData('')
@@ -634,13 +643,19 @@ const Index: React.FC = () => {
             </div>
           </div>
           <div className='opration-apply-content'>
+
             <div className='apply-log-box'>
-              <div>上次执行结果:</div>
-              <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
-              <div>标题: {infoDetail.info}</div>
-              <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
               {
-                infoDetail.success != 'yes' && <div>失败原因: {infoDetail.error}</div>
+                infoDetail.stsd && <>
+                  <div>上次执行结果:</div>
+                  <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
+                  <div>标题: {infoDetail.info}</div>
+                  <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
+                </>
+              }
+
+              {
+                (infoDetail.stsd &&infoDetail.success != 'yes') && <div>失败原因: {infoDetail.error}</div>
               }
             </div>
             <div className='apply-line-box'>

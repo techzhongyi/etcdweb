@@ -33,7 +33,12 @@ const Index: React.FC = () => {
   const envChange = (e) => {
     setStorage('env', e)
     setEnv(e)
-    // setWebShh()
+    clearInterval(timeoutObj);
+    clearTimeout(serverTimeoutObj);
+    if (webShh) {
+      webShh.close();
+    }
+    // setWebShh(e)
   }
   // 保持心跳
   const longstart = () => {
@@ -46,14 +51,14 @@ const Index: React.FC = () => {
         webShh.send('ping');
       } else {
         // webShhRefresh?.readyState != 1 连接异常 重新建立连接
-        setWebShh(getStorage('env'))
+        setWebShh(env)
       }
     }, 3000);
   };
   // 发送请求
-  const setWebShh = async () => {
+  const setWebShh = async (env) => {
     const data = {
-      env: getStorage('env') || 'Dev',
+      env,
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShh = await webSocket('/devopsCore/home', data);
@@ -81,10 +86,10 @@ const Index: React.FC = () => {
     }
   };
   useEffect(() => {
-    if(!getStorage('env')){
-      setStorage('env','Dev')
+    if (!getStorage('env')) {
+      setStorage('env', 'Dev')
     }
-    setWebShh()
+    setWebShh(env)
     return () => {
       clearInterval(timeoutObj);
       clearTimeout(serverTimeoutObj);
@@ -110,7 +115,7 @@ const Index: React.FC = () => {
         <div>持续运行时间:{item.bootupts}</div>
         <div>心跳响应时间(ms):{item.resptime}</div>
         {
-          item.status !='good' && <div>错误信息:{item.msg}</div>
+          item.status != 'good' && <div>错误信息:{item.msg}</div>
         }
       </div>
     )
@@ -126,44 +131,47 @@ const Index: React.FC = () => {
           options={envArray}
         />
       </div>
-      <div className='home-content'>
-        {
-          dataList.map(item => {
-            return (
-              <div className='home-content-list' onClick={() => { toOpratipn(item.organize, item.sourcebranch) }}>
-                <div className='list-title'>
-                  <div>{item.organize}:{item.name}({item.ip})</div>
-                  <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
-                  <div>{item.sourcebranch}</div>
-                </div>
-                <div className={['list-content',
-                  item.health.status == 'lost'
-                    ? 'list-content-gray'
-                    : item.health.status == 'lost'
-                      ? 'list-content-red'
-                      : 'list-content-green',
-                ].join(' ')}>
-                  {
-                    item.services.map(item_ => {
-                      return (
-                        <div className='list-item'>
-                          <Tooltip placement="top" title={getTitle(item_)}>
-                            <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : red_cloud} alt="" /></div>
-                          </Tooltip>
-                          <div className='list-item-text'>
-                            <div className='text-title'>{item_.sname}</div>
-                            <div className='text-status'>{item_.status == 'good' ? '正常' : item.status == 'lost' ? '失联' : '故障'}</div>
+      <div>{dataList.length}</div>
+      {
+        dataList.length > 0 ? <div className='home-content'>
+          {
+            dataList.map(item => {
+              return (
+                <div className='home-content-list' onClick={() => { toOpratipn(item.organize, item.sourcebranch) }}>
+                  <div className='list-title'>
+                    <div>{item.organize}:{item.name}({item.ip})</div>
+                    <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
+                    <div>{item.sourcebranch}</div>
+                  </div>
+                  <div className={['list-content',
+                    item.health.status == 'lost'
+                      ? 'list-content-gray'
+                      : item.health.status == 'lost'
+                        ? 'list-content-red'
+                        : 'list-content-green',
+                  ].join(' ')}>
+                    {
+                      item.services.map(item_ => {
+                        return (
+                          <div className='list-item'>
+                            <Tooltip placement="top" title={getTitle(item_)}>
+                              <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : red_cloud} alt="" /></div>
+                            </Tooltip>
+                            <div className='list-item-text'>
+                              <div className='text-title'>{item_.sname}</div>
+                              <div className='text-status'>{item_.status == 'good' ? '正常' : item.status == 'lost' ? '失联' : '故障'}</div>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })
-                  }
+                        )
+                      })
+                    }
+                  </div>
                 </div>
-              </div>
-            )
-          })
-        }
-      </div>
+              )
+            })
+          }
+        </div> : <></>
+      }
     </div>
   );
 };

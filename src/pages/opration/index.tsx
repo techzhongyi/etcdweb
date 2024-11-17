@@ -93,6 +93,7 @@ const Index: React.FC = () => {
   const isShowModal4 = (show: boolean, row?: any) => {
     setVisible4(show);
     setRecord4({
+      ...row,
       env: getStorage('env'),
       organize: history?.location?.query?.organize
     });
@@ -153,18 +154,19 @@ const Index: React.FC = () => {
           return
         }
         const _data = JSON.parse(recv.data)
-        if (_data.Step == 1 && (!_data.IsDone)) {
-          setServiceStep(3)
-        } else if (_data.Step == 1 && _data.IsDone) {
-          setServiceStep(4)
-          setIsDone(!(_data.IsDone))
-          setRefreshTopText(_data.Msg)
-        } else if (_data.Step === 0 && (!_data.IsDone)) {
-          setServiceStep(2)
+        if (_data.Step >= 0 && (!_data.IsDone) && (!_data.Err)) {
+          setServiceStep(_data.Step + 2)
         }
-        if ((!_data.IsDone)) {
+        if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
+          setServiceStep(_data.Step + 3)
+          if(_data.Result!=''){
+            setRefreshTopText(_data.Result)
+          }
+        }
+        if (_data.Msg!='') {
           setRefreshBotText(_data.Msg)
         }
+        setIsDone(!(_data.IsDone))
       } else {
         // zsentry.consume(recv.data);
       }
@@ -208,28 +210,20 @@ const Index: React.FC = () => {
           return
         }
         const _data = JSON.parse(recv.data)
-        if (_data.Step >= 0 && (!_data.IsDone)) {
+        if (_data.Step >= 0 && (!_data.IsDone) && (!_data.Err)) {
           setApplyStep(_data.Step + 2)
-          setApplyIsDone(!(_data.IsDone))
-        } else {
-          setApplyIsDone(!(_data.IsDone))
         }
-        if (_data.Step >= 0 && (_data.IsDone)) {
+        if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
           setApplyStep(_data.Step + 3)
           getApplyResult()
         }
-
-        if ((!_data.IsDone) && _data.Msg != '') {
+        setApplyIsDone(!(_data.IsDone))
+        if (_data.Msg != '') {
           setApplyBotText(_data.Msg)
         }
         if (_data.NeedSqlConfirm) {
           isShowModal7(true)
         }
-        // if (_data.Msg == '') {
-        //   return
-        // }
-        // applyData_ += (_data.Msg) + '<br/>';
-        // setApplyData(applyData_)
       } else {
         // zsentry.consume(recv.data);
       }
@@ -293,16 +287,17 @@ const Index: React.FC = () => {
       message.error('网络连接错误,请稍后再试...')
       return
     }
+    setRefreshTopText('')
+    setRefreshBotText('')
     setServiceStep(1)
     setIsDone(true)
     webShhRefresh.send('refresh');
   }
   // 应用
   const onFinish = async (value) => {
-
     setApplyStep(1)
     setApplyIsDone(true)
-    // setApplyData('')
+    setApplyBotText('')
     isShowModal(false)
     webShhApply.send('apply??' + value.desc)
   }
@@ -491,10 +486,12 @@ const Index: React.FC = () => {
       dataIndex: 'createtime',
       align: 'center',
       key: 'createtime',
+      width: 170,
     },
     {
       title: '操作',
       align: 'center',
+      width: 180,
       render: (_, row: any) => (
         <Space>
           <a onClick={() => { isShowModal2(true, row) }}>日志</a>
@@ -596,9 +593,9 @@ const Index: React.FC = () => {
         <div className='opration-refresh'>
           <div className='opration-refresh-title'>
             <div>
-              <Button type="primary" loading={isDone} onClick={() => {
+              <Button type="primary" loading={applyIsDone || isDone} onClick={() => {
                 refresh()
-              }}>{isDone ? 'waiting...' : 'Refresh'}</Button>
+              }}>{(applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
             </div>
             <div className='opration-refresh-step'>
               <div style={{ color: serviceStep == 1 ? '#11BBAA' : '' }}>Start</div>
@@ -607,7 +604,9 @@ const Index: React.FC = () => {
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: serviceStep == 3 ? '#11BBAA' : '' }}>Project Scan</div>
               <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: serviceStep == 4 ? '#11BBAA' : '' }}>End</div>
+              <div style={{ color: serviceStep == 4 ? '#11BBAA' : '' }}>Web Depoly</div>
+              <div><img src={long_arrow} alt="" /></div>
+              <div style={{ color: serviceStep == 5 ? '#11BBAA' : '' }}>End</div>
             </div>
           </div>
           <div className='opration-refresh-content'>
@@ -626,27 +625,52 @@ const Index: React.FC = () => {
         <div className='opration-apply'>
           <div className='opration-apply-title'>
             <div>
-              <Button type="primary" loading={applyIsDone} onClick={() => {
+              <Button type="primary" loading={applyIsDone || isDone} onClick={() => {
                 isShowModal(true)
-              }}>{applyIsDone ? 'waiting...' : 'Apply'}</Button>
+              }}>{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
             </div>
-            <div className='opration-apply-step'>
-              <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>bootup</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: applyStep == 3 ? '#11BBAA' : '' }}>Sql gen</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql confirm</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
-            </div>
+            {
+              getStorage('env') == 'Dev' ? <div className='opration-apply-step'>
+                <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Bootup</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 3 ? '#11BBAA' : '' }}>Sql gen</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql confirm</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
+              </div>:getStorage('env') == 'Test' ? <div className='opration-apply-step'>
+                <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Docker Build</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 3 ? '#11BBAA' : '' }}>Etcd Upgrade</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql Gen</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>Sql Confirm</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 6 ? '#11BBAA' : '' }}>End</div>
+              </div>: getStorage('env') == 'Prod' ?<div className='opration-apply-step'>
+                <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Etcd Upgrade</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 3 ? '#11BBAA' : '' }}>Sql Gen</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql Confirm</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
+              </div>:''
+            }
+
           </div>
           <div className='opration-apply-content'>
 
             <div className='apply-log-box'>
               {
-                infoDetail.stsd && <>
+                infoDetail.stsd != null && <>
                   <div>上次执行结果:</div>
                   <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
                   <div>标题: {infoDetail.info}</div>
@@ -670,7 +694,7 @@ const Index: React.FC = () => {
           </div>
           <div className='log-content-box'>
             {
-              <div id='log-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '800px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
+              <div id='log-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '600px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
             }
           </div>
         </div>

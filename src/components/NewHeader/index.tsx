@@ -41,7 +41,7 @@ const EtdcHeader: React.FC = (props) => {
             okText="是"
             cancelText="否"
           >
-            <LogoutOutlined style={{ fontSize: '30px' }} />
+            <LogoutOutlined style={{ fontSize: '22px' }} />
           </Popconfirm>
 
         </div>

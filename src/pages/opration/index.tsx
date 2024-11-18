@@ -4,7 +4,7 @@ import './index.less';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
 import { getStorage } from '@/utils/storage';
-import { history } from 'umi';
+import { history, useModel } from 'umi';
 import { finishedSqlconfirmAPI, getFinishedLastugpAPI } from '@/services/comservice';
 import './index.less'
 import EtdcHeader from '@/components/NewHeader';
@@ -32,6 +32,8 @@ let webShhRefresh: any = null,
   timeoutObjRefresh: any = undefined,
   serverTimeoutObjRefresh: any = undefined;
 const Index: React.FC = () => {
+  const { initialState, setInitialState } = useModel('@@initialState');
+  const { currentUser } = initialState;
   const [isDone, setIsDone] = useState(false)
   const [applyIsDone, setApplyIsDone] = useState(false)
   const [versionList, setVersionList] = useState([])
@@ -140,7 +142,8 @@ const Index: React.FC = () => {
   const setWebShhRefresh = async () => {
     const data = {
       env: getStorage('env'),
-      organize: history?.location?.query?.organize
+      organize: history?.location?.query?.organize,
+      name: currentUser.name
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhRefresh = await webSocket('/devopsCore/refresh', data);
@@ -196,7 +199,8 @@ const Index: React.FC = () => {
   const setWebShhApply = async () => {
     const data = {
       env: getStorage('env'),
-      organize: history?.location?.query?.organize
+      organize: history?.location?.query?.organize,
+      name: currentUser.name
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhApply = await webSocket('/devopsCore/apply', data);
@@ -399,6 +403,8 @@ const Index: React.FC = () => {
       if (webShhRefresh) {
         webShhRefresh.close();
       }
+      setIsDone(false)
+      setApplyIsDone(false)
     }
   }, [])
   let befortop = 0

@@ -23,6 +23,7 @@ import ApplyDownModal from './components/applyDownModal';
 import { editEnvConfigAPI } from '@/services/envConfig';
 import PortModal from './components/portModal';
 import AddVersionModal from './components/addVersionModal';
+import MergeModal from './components/mergeModal';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -35,6 +36,8 @@ let webShhApply: any = null,
 let webShhRefresh: any = null,
   timeoutObjRefresh: any = undefined,
   serverTimeoutObjRefresh: any = undefined;
+let data_ = '';
+let etcd_data = ''
 const Index: React.FC = () => {
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentUser } = initialState;
@@ -273,7 +276,7 @@ const Index: React.FC = () => {
       }
     }, 3000);
   };
-  let data_ = '';
+
   // 发送请求
   const setWebShh = async () => {
     const data = {
@@ -319,7 +322,7 @@ const Index: React.FC = () => {
       }
     }, 3000);
   };
-  let etcd_data = ''
+
   // 发送请求etcd日志
   const setEtcdWebShh = async () => {
     const data = {
@@ -329,7 +332,7 @@ const Index: React.FC = () => {
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhEtcd = await webSocket('/devopsCore/logsreal', data, 'etcd');
     webShhEtcd.onopen = (res: any) => {
-      longstart();
+      longEtcdstart();
     };
     // 回调
     webShhEtcd.onmessage = function (recv: any) {
@@ -444,9 +447,9 @@ const Index: React.FC = () => {
       type: value.type
     }
     const { status, msg } = await getCreateVersionAPI(params)
-    if(status === 0){
+    if (status === 0) {
       message.success('创建成功')
-    }else{
+    } else {
       message.error(msg)
     }
   }
@@ -457,9 +460,9 @@ const Index: React.FC = () => {
       revision: value.revision
     }
     const { status, msg } = await getMergeVersionAPI(params)
-    if(status === 0){
+    if (status === 0) {
       message.success('合并分支成功')
-    }else{
+    } else {
       message.error(msg)
     }
   }
@@ -527,15 +530,23 @@ const Index: React.FC = () => {
     const { data: { items } } = await getOpVersionListAPI(params)
     setVersionList(items)
   }
+  // 清屏
+  const clearLog = (type) => {
+    if(type == 'devopsCore'){
+      data_ = ''
+      setCodeLog('')
+    }else{
+      etcd_data = ''
+      setEtcdCodeLog('')
+    }
+  }
   useEffect(() => {
     const div = document.getElementById('log-content')
     window.addEventListener('scroll', () => {
       const aftertop = div?.scrollTop;//兼容
       if (aftertop - befortop > 0) {
-        console.log('向下');
         setIsScroll(false)
       } else {
-        console.log('向上');
         setIsScroll(true)
       }
       befortop = aftertop;
@@ -554,10 +565,8 @@ const Index: React.FC = () => {
     window.addEventListener('scroll', () => {
       const aftertop = div?.scrollTop;//兼容
       if (aftertop - beforetcdtop > 0) {
-        console.log('向下');
         setIsEtcdScroll(false)
       } else {
-        console.log('向上');
         setIsEtcdScroll(true)
       }
       beforetcdtop = aftertop;
@@ -654,6 +663,14 @@ const Index: React.FC = () => {
       align: 'center',
     },
     {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      hideInSearch: true,
+      align: 'center',
+      render: (_, record) => record.status == 'doing' ? '进行中' : record.status == 'done' ? '已完成' : '--',
+    },
+    {
       title: '修订时间',
       dataIndex: 'ts',
       key: 'ts',
@@ -676,19 +693,19 @@ const Index: React.FC = () => {
       <EtdcHeader />
 
       <div className='page-wrap'>
-      <div className='version-list'>
+        <div className='version-list'>
           <div className='tables-titles'>
             <div>Version</div>
             <div><Space>
               <Button type="primary" onClick={() => {
-              isShowModal9(true)
-            }}>创建版本</Button>
-            <Button type="primary" onClick={() => {
-              isShowModal10(true)
-            }}>合并分支</Button>
-            <Button type="primary" onClick={() => {
-              isShowModal1(true)
-            }}>修订版本</Button></Space></div>
+                isShowModal9(true)
+              }}>创建版本</Button>
+              <Button type="primary" onClick={() => {
+                isShowModal10(true)
+              }}>合并分支</Button>
+              <Button type="primary" onClick={() => {
+                isShowModal1(true)
+              }}>修订版本</Button></Space></div>
           </div>
           <div>
             <Table
@@ -719,7 +736,7 @@ const Index: React.FC = () => {
               dataSource={serviceList}
               pagination={false}
               columns={columns}
-              scroll={{ y: 300 }} />
+            />
           </div>
         </div>
 
@@ -830,6 +847,11 @@ const Index: React.FC = () => {
               <div id='log-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '600px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
             }
           </div>
+          <div className='log-clear' onClick={() => {
+            clearLog('devopsCore')
+          }}>
+            <div> clear </div>
+          </div>
         </div>
         {
           getStorage('env') != 'Dev' && <div className='log-content'>
@@ -840,6 +862,11 @@ const Index: React.FC = () => {
               {
                 <div id='log-etcd-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '600px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: etcdCodeLog }}></div>
               }
+            </div>
+            <div className='log-clear' onClick={() => {
+              clearLog('etcd')
+            }}>
+              <div> clear </div>
             </div>
           </div>
         }

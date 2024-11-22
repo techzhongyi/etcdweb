@@ -9,6 +9,7 @@ import { webSocket } from '@/utils/socket';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
+let data_ = '';
 const LogDetailModal: React.FC<any> = (props: any) => {
   const { visible, isShowModal, record } = props;
   const actionRef = useRef<ActionType>();
@@ -104,7 +105,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       }
     }, 3000);
   };
-  let data_ = '';
+
   // 发送请求
   const setWebShh = async () => {
     const data = {
@@ -160,7 +161,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
     }
   }, [codeLog])
   useEffect(() => {
-    if(record){
+    if (record) {
       setWebShh()
     }
 
@@ -171,7 +172,12 @@ const LogDetailModal: React.FC<any> = (props: any) => {
         webShh.close();
       }
     }
-  },[record])
+  }, [record])
+  // 清屏
+  const clearLog = () => {
+    data_ = ''
+    setCodeLog('')
+  }
   return (
     <Modal
       title='日志'
@@ -192,6 +198,11 @@ const LogDetailModal: React.FC<any> = (props: any) => {
             {
               <div id='log-history' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
             }
+            <div className='log-clear' onClick={() => {
+              clearLog()
+            }}>
+              <div> clear </div>
+            </div>
           </div>
         </Tabs.TabPane>
         <Tabs.TabPane tab="历史日志" key="2">

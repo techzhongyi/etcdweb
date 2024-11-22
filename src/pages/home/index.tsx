@@ -151,22 +151,29 @@ const Index: React.FC = () => {
                         ? 'list-content-red'
                         : 'list-content-yellow',
                   ].join(' ')}>
-                    {
-                      item.services.map(item_ => {
-                        return (
-                          <div className='list-item'>
-                            <Tooltip placement="top" title={getTitle(item_)}>
-                              <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud:item_.status == 'init' ? yellow_cloud: red_cloud } alt="" /></div>
-                            </Tooltip>
-                            <div className='list-item-text'>
-                              <div className='text-title'>{item_.sname}</div>
-                              <div className='text-status'>{item_.status == 'good' ? '正常' : item.status == 'lost' ? '失联' : '故障'}</div>
+                    <div className='list-item-wrap'>
+                      {
+                        item.services.map(item_ => {
+                          return (
+                            <div className='list-item'>
+                              <Tooltip placement="top" title={getTitle(item_)}>
+                                <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : item_.status == 'init' ? yellow_cloud : red_cloud} alt="" /></div>
+                              </Tooltip>
+                              <div className='list-item-text'>
+                                <div className='text-title'>{item_.sname}</div>
+                                <div className='text-status'>{item_.status == 'good' ? '正常' : item.status == 'lost' ? '失联' : '故障'}</div>
+                              </div>
                             </div>
-                          </div>
-                        )
-                      })
-                    }
+                          )
+                        })
+                      }
+                    </div>
+                    <div>
+                      <div>hosti: {item.hosti?item.hosti:'-'}</div>
+                      <div>os: {item.os?item.os:'-'}  portpeer: {item.portpeer?item.portpeer:'-'}  desc: {item.desc?item.desc:'-'} </div>
+                    </div>
                   </div>
+
                 </div>
               )
             })

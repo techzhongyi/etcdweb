@@ -64,7 +64,7 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
                       {item.env}
                     </ProDescriptions.Item>
                     <ProDescriptions.Item valueType="text" ellipsis label="lang">
-                      {item.lang}元
+                      {item.lang}
                     </ProDescriptions.Item>
                     <ProDescriptions.Item valueType="text" ellipsis label="organize">
                       {item.organize}

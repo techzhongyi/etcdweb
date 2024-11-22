@@ -109,10 +109,11 @@ const LogDetailModal: React.FC<any> = (props: any) => {
   const setWebShh = async () => {
     const data = {
       env: record.env,
-      sname: record.sname
+      sname: record.sname,
+      organize: record.organize,
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
-    webShh = await webSocket('/devopsCore/logsreal', data);
+    webShh = await webSocket('/devopsCore/logsreal', data, 'servs');
     webShh.onopen = (res: any) => {
       longstart();
     };

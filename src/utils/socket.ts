@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 export const webSocket = async (
   url: string,
   params?: any,
+  behavior?: any,
   binaryType?: any,
 ) => {
   let globalConstant = await fetch('/env.json', {
@@ -18,7 +19,12 @@ export const webSocket = async (
     });
   const uri = globalConstant.webShh;
   const params_ = JSON.stringify(params);
-  const wxurl = uri + url + '?p=' + encodeURIComponent(params_);
+  let wxurl = '';
+  if(behavior){
+     wxurl = uri + url + '?p=' + encodeURIComponent(params_) + '&b=' + behavior;
+  }else{
+    wxurl = uri + url + '?p=' + encodeURIComponent(params_)
+  }
   const nonce = requestConfig.getNonce().toString();
 
   // [opaque  response nonce] 子协议现在传三个请求头的参数

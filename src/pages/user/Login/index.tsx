@@ -3,7 +3,7 @@ import { Alert, message } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { LoginForm, ProFormText, ProFormSelect } from '@ant-design/pro-form';
 import { history, useModel } from 'umi';
-import { getProjectList, login } from '@/services/login/login';
+import { login } from '@/services/login/login';
 import './index.less';
 import { setStorage } from '@/utils/storage';
 import loginLogo from '../../../../public/icons/loginLogo.png';
@@ -76,22 +76,6 @@ const Login: React.FC = () => {
       message.error('登录失败，请重试！');
     }
     setSubmitting(false);
-  };
-  const getList = async () => {
-    const array: { label: any; value: any }[] = [];
-    const param = {};
-    const {
-      data: { items },
-      status,
-    } = await getProjectList(param);
-    if (status === 0) {
-      items?.map((item_: any) => {
-        array.push({ label: item_.name, value: item_.name });
-      });
-      return array;
-    } else {
-      return [];
-    }
   };
 
 

@@ -16,15 +16,19 @@ import LogDetailModal from './components/logDetailModal';
 import ConfigModal from './components/configModal';
 import EnvConfigModal from './components/envConfigModal';
 import VersionDetailModal from './components/versionDetailModal';
-import { getOpVersionListAPI, getCommentVersionAPI, getRevisionVersionAPI } from '@/services/version';
+import { getOpVersionListAPI, getCommentVersionAPI, getRevisionVersionAPI, getCreateVersionAPI, getMergeVersionAPI } from '@/services/version';
 import moment from 'moment';
 import CommentModal from './components/commentModal';
 import ApplyDownModal from './components/applyDownModal';
 import { editEnvConfigAPI } from '@/services/envConfig';
 import PortModal from './components/portModal';
+import AddVersionModal from './components/addVersionModal';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
+let webShhEtcd: any = null,
+  timeoutObjEtcd: any = undefined,
+  serverTimeoutObjEtcd: any = undefined;
 let webShhApply: any = null,
   timeoutObjApply: any = undefined,
   serverTimeoutObjApply: any = undefined;
@@ -39,7 +43,9 @@ const Index: React.FC = () => {
   const [versionList, setVersionList] = useState([])
   const [serviceList, setServiceList] = useState([])
   const [codeLog, setCodeLog] = useState<string>('');
+  const [etcdCodeLog, setEtcdCodeLog] = useState<string>('');
   const [isScroll, setIsScroll] = useState(false)
+  const [isEtcdScroll, setIsEtcdScroll] = useState(false)
   const [serviceStep, setServiceStep] = useState(-1)
   const [applyStep, setApplyStep] = useState(-1)
   const [refreshTopText, setRefreshTopText] = useState('')
@@ -62,6 +68,10 @@ const Index: React.FC = () => {
   const [record7, setRecord7] = useState<any>({});
   const [visible8, setVisible8] = useState<boolean>(false);
   const [record8, setRecord8] = useState<any>({});
+  const [visible9, setVisible9] = useState<boolean>(false);
+  const [record9, setRecord9] = useState<any>({});
+  const [visible10, setVisible10] = useState<boolean>(false);
+  const [record10, setRecord10] = useState<any>({});
   const [infoDetail, setInfoDetail] = useState<any>({
     stsd: null,
     success: '',
@@ -122,6 +132,16 @@ const Index: React.FC = () => {
     setVisible8(show);
     setRecord8(row)
   };
+  // addversion Modal
+  const isShowModal9 = (show: boolean, row?: any) => {
+    setVisible9(show);
+    setRecord9(row)
+  };
+  // addversion Modal
+  const isShowModal10 = (show: boolean, row?: any) => {
+    setVisible10(show);
+    setRecord10(row)
+  };
   // 保持步骤心跳
   const longRefreshstart = () => {
     //1、通过关闭定时器和倒计时进行重置心跳
@@ -162,11 +182,11 @@ const Index: React.FC = () => {
         }
         if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
           setServiceStep(_data.Step + 3)
-          if(_data.Result!=''){
+          if (_data.Result != '') {
             setRefreshTopText(_data.Result)
           }
         }
-        if (_data.Msg!='') {
+        if (_data.Msg != '') {
           setRefreshBotText(_data.Msg)
         }
         setIsDone(!(_data.IsDone))
@@ -261,7 +281,7 @@ const Index: React.FC = () => {
       sname: 'devopsCore'
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
-    webShh = await webSocket('/devopsCore/logsreal', data);
+    webShh = await webSocket('/devopsCore/logsreal', data, 'devops');
     webShh.onopen = (res: any) => {
       longstart();
     };
@@ -269,7 +289,6 @@ const Index: React.FC = () => {
     webShh.onmessage = function (recv: any) {
       if (typeof (recv.data) === 'string') {
         if (recv.data == 'pong' || recv.data == 'null') {
-          // setCodeLog('')
           return
         }
         data_ += (recv.data + '<br/>');
@@ -282,6 +301,52 @@ const Index: React.FC = () => {
     webShh.onerror = function () {
       webShh?.close();
       webShh = null;
+      // setWebShh(getStorage('env'))
+    }
+  };
+  // 保持日志心跳
+  const longEtcdstart = () => {
+    //1、通过关闭定时器和倒计时进行重置心跳
+    clearInterval(timeoutObjEtcd);
+    clearTimeout(serverTimeoutObjEtcd);
+    // 2、每隔30s向后端发送一条商议好的数据
+    timeoutObjEtcd = setInterval(() => {
+      if (webShh?.readyState === 1) {
+        webShh.send('ping');
+      } else {
+        // webShhRefresh?.readyState != 1 连接异常 重新建立连接
+        setEtcdWebShh()
+      }
+    }, 3000);
+  };
+  let etcd_data = ''
+  // 发送请求etcd日志
+  const setEtcdWebShh = async () => {
+    const data = {
+      env: getStorage('env'),
+      sname: 'devopsCore'
+    }
+    // 必须设置格式为arraybuffer，zmodem 才可以使用
+    webShhEtcd = await webSocket('/devopsCore/logsreal', data, 'etcd');
+    webShhEtcd.onopen = (res: any) => {
+      longstart();
+    };
+    // 回调
+    webShhEtcd.onmessage = function (recv: any) {
+      if (typeof (recv.data) === 'string') {
+        if (recv.data == 'pong' || recv.data == 'null') {
+          return
+        }
+        etcd_data += (recv.data + '<br/>');
+        setEtcdCodeLog(etcd_data)
+      } else {
+        // zsentry.consume(recv.data);
+      }
+    };
+    // 报错
+    webShhEtcd.onerror = function () {
+      webShhEtcd?.close();
+      webShhEtcd = null;
       // setWebShh(getStorage('env'))
     }
   };
@@ -371,6 +436,33 @@ const Index: React.FC = () => {
       message.error(msg)
     }
   }
+  // 创建版本
+  const onFinish9 = async (value: any) => {
+    const params = {
+      organize: history?.location?.query?.organize,
+      branch: value.branch,
+      type: value.type
+    }
+    const { status, msg } = await getCreateVersionAPI(params)
+    if(status === 0){
+      message.success('创建成功')
+    }else{
+      message.error(msg)
+    }
+  }
+  // 合并分支
+  const onFinish10 = async (value: any) => {
+    const params = {
+      organize: history?.location?.query?.organize,
+      revision: value.revision
+    }
+    const { status, msg } = await getMergeVersionAPI(params)
+    if(status === 0){
+      message.success('合并分支成功')
+    }else{
+      message.error(msg)
+    }
+  }
   // 获取apply执行结果
   const getApplyResult = async () => {
     const params = {
@@ -382,6 +474,7 @@ const Index: React.FC = () => {
   }
   useEffect(() => {
     setWebShh()
+    setEtcdWebShh()
     setWebShhApply()
     setWebShhRefresh()
     getServiceList()
@@ -394,6 +487,8 @@ const Index: React.FC = () => {
       clearTimeout(serverTimeoutObjApply);
       clearInterval(timeoutObjRefresh);
       clearTimeout(serverTimeoutObjRefresh);
+      clearInterval(timeoutObjEtcd);
+      clearTimeout(serverTimeoutObjEtcd);
       if (webShh) {
         webShh.close();
       }
@@ -403,11 +498,13 @@ const Index: React.FC = () => {
       if (webShhRefresh) {
         webShhRefresh.close();
       }
-      setIsDone(false)
-      setApplyIsDone(false)
+      if (webShhEtcd) {
+        webShhEtcd.close();
+      }
     }
   }, [])
   let befortop = 0
+  let beforetcdtop = 0
 
   // 获取service列表
   const getServiceList = async () => {
@@ -452,6 +549,28 @@ const Index: React.FC = () => {
       div.scrollTop = div.scrollHeight
     }
   }, [codeLog])
+  useEffect(() => {
+    const div = document.getElementById('log-etcd-content')
+    window.addEventListener('scroll', () => {
+      const aftertop = div?.scrollTop;//兼容
+      if (aftertop - beforetcdtop > 0) {
+        console.log('向下');
+        setIsEtcdScroll(false)
+      } else {
+        console.log('向上');
+        setIsEtcdScroll(true)
+      }
+      beforetcdtop = aftertop;
+    }, true)
+    window.addEventListener('keydown', (e) => {
+      if (e.keyCode === 13) {
+        setIsEtcdScroll(false)
+      }
+    })
+    if (div && !isEtcdScroll) {
+      div.scrollTop = div.scrollHeight
+    }
+  }, [etcdCodeLog])
 
   const columns = [
     {
@@ -557,6 +676,33 @@ const Index: React.FC = () => {
       <EtdcHeader />
 
       <div className='page-wrap'>
+      <div className='version-list'>
+          <div className='tables-titles'>
+            <div>Version</div>
+            <div><Space>
+              <Button type="primary" onClick={() => {
+              isShowModal9(true)
+            }}>创建版本</Button>
+            <Button type="primary" onClick={() => {
+              isShowModal10(true)
+            }}>合并分支</Button>
+            <Button type="primary" onClick={() => {
+              isShowModal1(true)
+            }}>修订版本</Button></Space></div>
+          </div>
+          <div>
+            <Table
+              locale={{
+                emptyText: '', // 使用自定义组件作为“暂无数据”的提示
+              }}
+              rowKey={(record) => record.id}
+              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
+              dataSource={versionList}
+              pagination={false}
+              columns={columns1}
+              scroll={{ y: 300 }} />
+          </div>
+        </div>
         <div className='service-list'>
           <div className='tables-titles'>
             <div>Service</div>
@@ -576,26 +722,7 @@ const Index: React.FC = () => {
               scroll={{ y: 300 }} />
           </div>
         </div>
-        <div className='version-list'>
-          <div className='tables-titles'>
-            <div>Version</div>
-            <div><Button type="primary" onClick={() => {
-              isShowModal1(true)
-            }}>修订版本</Button></div>
-          </div>
-          <div>
-            <Table
-              locale={{
-                emptyText: '', // 使用自定义组件作为“暂无数据”的提示
-              }}
-              rowKey={(record) => record.id}
-              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
-              dataSource={versionList}
-              pagination={false}
-              columns={columns1}
-              scroll={{ y: 300 }} />
-          </div>
-        </div>
+
         <div className='opration-refresh'>
           <div className='opration-refresh-title'>
             <div>
@@ -646,7 +773,7 @@ const Index: React.FC = () => {
                 <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql confirm</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
-              </div>:getStorage('env') == 'Test' ? <div className='opration-apply-step'>
+              </div> : getStorage('env') == 'Test' ? <div className='opration-apply-step'>
                 <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Docker Build</div>
@@ -658,7 +785,7 @@ const Index: React.FC = () => {
                 <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>Sql Confirm</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 6 ? '#11BBAA' : '' }}>End</div>
-              </div>: getStorage('env') == 'Prod' ?<div className='opration-apply-step'>
+              </div> : getStorage('env') == 'Prod' ? <div className='opration-apply-step'>
                 <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Etcd Upgrade</div>
@@ -668,7 +795,7 @@ const Index: React.FC = () => {
                 <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql Confirm</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
-              </div>:''
+              </div> : ''
             }
 
           </div>
@@ -696,7 +823,7 @@ const Index: React.FC = () => {
         </div>
         <div className='log-content'>
           <div className='log-titles'>
-            <div>日志</div>
+            <div>devopsCore日志</div>
           </div>
           <div className='log-content-box'>
             {
@@ -704,6 +831,19 @@ const Index: React.FC = () => {
             }
           </div>
         </div>
+        {
+          getStorage('env') != 'Dev' && <div className='log-content'>
+            <div className='log-titles'>
+              <div>etcd日志</div>
+            </div>
+            <div className='log-content-box'>
+              {
+                <div id='log-etcd-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '600px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: etcdCodeLog }}></div>
+              }
+            </div>
+          </div>
+        }
+
       </div>
       {!visible ? (
         ''
@@ -789,6 +929,28 @@ const Index: React.FC = () => {
           visible={visible8}
           isShowModal={isShowModal8}
           record={record8}
+          branch={history?.location?.query?.branch}
+        />
+      )}
+      {!visible9 ? (
+        ''
+      ) : (
+        <AddVersionModal
+          visible={visible9}
+          isShowModal={isShowModal9}
+          record={record9}
+          onFinish={onFinish9}
+          branch={history?.location?.query?.branch}
+        />
+      )}
+      {!visible10 ? (
+        ''
+      ) : (
+        <MergeModal
+          visible={visible10}
+          isShowModal={isShowModal10}
+          record={record10}
+          onFinish={onFinish10}
           branch={history?.location?.query?.branch}
         />
       )}

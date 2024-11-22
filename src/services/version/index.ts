@@ -46,4 +46,18 @@ export async function getApiAPI(options: any) {
     params: options,
   });
 }
+/** 合并分支 接口 DELETE /devopsCore/version */
+export async function getMergeVersionAPI(options: any) {
+  return request(' /devopsCore/version', {
+    method: 'DELETE',
+    params: options,
+  });
+}
+/** 创建版本 接口 POST /devopsCore/version */
+export async function getCreateVersionAPI(options: any) {
+  return request('/devopsCore/version', {
+    method: 'POST',
+    data: options,
+  });
+}
 

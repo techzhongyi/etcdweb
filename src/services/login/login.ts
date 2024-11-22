@@ -15,21 +15,7 @@ export async function login(
     ...(options || {}),
   });
 }
-/** 获取项目列表 POST  /devopsCore/organize */
-export async function getProjectList(
-  body: API.LoginParams,
-  options?: Record<string, any>,
-) {
-  const params = 'p=' + encodeURIComponent(JSON.stringify(body));
-  return request('/devopsCore/organize', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    params,
-    ...(options || {}),
-  });
-}
+
 /** 登出接口 PUT /user/admin/user*/
 export async function loginout(options: any) {
   return request('/user/admin/logout', {

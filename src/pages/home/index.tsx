@@ -7,6 +7,7 @@ import { setStorage, getStorage } from '@/utils/storage';
 import green_cloud from '../../../public/icons/ectd/green_cloud.png'
 import red_cloud from '../../../public/icons/ectd/red_cloud.png'
 import gray_cloud from '../../../public/icons/ectd/gray_cloud.png'
+import yellow_cloud from '../../../public/icons/ectd/yellow_cloud.png'
 import EtdcHeader from '@/components/NewHeader';
 let webShh: any = null,
   timeoutObj: any = undefined,
@@ -146,16 +147,16 @@ const Index: React.FC = () => {
                   <div className={['list-content',
                     item.health.status == 'lost'
                       ? 'list-content-gray'
-                      : item.health.status == 'lost'
+                      : item.health.status == 'fault'
                         ? 'list-content-red'
-                        : 'list-content-green',
+                        : 'list-content-yellow',
                   ].join(' ')}>
                     {
                       item.services.map(item_ => {
                         return (
                           <div className='list-item'>
                             <Tooltip placement="top" title={getTitle(item_)}>
-                              <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : red_cloud} alt="" /></div>
+                              <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud:item_.status == 'init' ? yellow_cloud: red_cloud } alt="" /></div>
                             </Tooltip>
                             <div className='list-item-text'>
                               <div className='text-title'>{item_.sname}</div>

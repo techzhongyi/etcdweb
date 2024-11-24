@@ -581,7 +581,7 @@ const Index: React.FC = () => {
     }
   }, [etcdCodeLog])
 
-  const columns = [
+  const columnsTest = [
     {
       title: '服务名称',
       dataIndex: 'sname',
@@ -590,9 +590,9 @@ const Index: React.FC = () => {
     },
     {
       title: 'API端口号',
-      dataIndex: 'sname',
+      dataIndex: 'apiport',
       align: 'center',
-      key: 'sname',
+      key: 'apiport',
     },
     {
       title: '服务状态',
@@ -602,33 +602,130 @@ const Index: React.FC = () => {
       align: 'center',
       render: (_, record) => record.status == 'lost' ? '失联' : record.status == 'good' ? '正常' : record.status == 'fault' ? '故障' : '--',
     },
-    // {
-    //   title: '持续启动时间',
-    //   dataIndex: 'bootupts',
-    //   align: 'center',
-    //   key: 'bootupts',
-    //   render: (_, record) => record.bootupts ? moment(record.bootupts * 1000).format('YYYY-MM-DD HH:mm') : '--',
-    // },
     {
       title: '镜像构建时间',
-      dataIndex: 'buildtime',
+      dataIndex: 'imagebuildtime',
       align: 'center',
-      key: 'buildtime',
-      hideInTable: getStorage('env') != 'Test',
+      key: 'imagebuildtime',
     },
     {
       title: '镜像更新时间',
-      dataIndex: 'buildtime',
+      dataIndex: 'imageupgdtime',
       align: 'center',
-      key: 'buildtime',
-      hideInTable: getStorage('env') == 'Dev',
+      key: 'imageupgdtime',
+    },
+    {
+      title: 'Sql升级时间',
+      dataIndex: 'sqltime',
+      align: 'center',
+      key: 'sqltime',
+    },
+    {
+      title: '持续运行时间',
+      dataIndex: 'createtime',
+      align: 'center',
+      key: 'createtime',
+      width: 170,
+    },
+    {
+      title: '操作',
+      align: 'center',
+      width: 180,
+      render: (_, row: any) => (
+        <Space>
+          <a onClick={() => { isShowModal2(true, row) }}>日志</a>
+          <a onClick={() => { isShowModal3(true, row) }}>配置</a>
+          {
+            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>接口</a>
+          }
+          <a onClick={() => { isShowModal4(true, row) }}>ENV</a>
+        </Space>
+      ),
+    },
+  ];
+  const columnsDev = [
+    {
+      title: '服务名称',
+      dataIndex: 'sname',
+      align: 'center',
+      key: 'sname',
+    },
+    {
+      title: 'API端口号',
+      dataIndex: 'apiport',
+      align: 'center',
+      key: 'apiport',
+    },
+    {
+      title: '服务状态',
+      dataIndex: 'status',
+      key: 'status',
+      hideInSearch: true,
+      align: 'center',
+      render: (_, record) => record.status == 'lost' ? '失联' : record.status == 'good' ? '正常' : record.status == 'fault' ? '故障' : '--',
     },
     {
       title: 'git地址',
-      dataIndex: 'buildtime',
+      dataIndex: 'gitrepo',
       align: 'center',
-      key: 'buildtime',
+      key: 'gitrepo',
       hideInTable: getStorage('env') != 'Dev',
+    },
+    {
+      title: 'Sql升级时间',
+      dataIndex: 'sqltime',
+      align: 'center',
+      key: 'sqltime',
+    },
+    {
+      title: '持续运行时间',
+      dataIndex: 'createtime',
+      align: 'center',
+      key: 'createtime',
+      width: 170,
+    },
+    {
+      title: '操作',
+      align: 'center',
+      width: 180,
+      render: (_, row: any) => (
+        <Space>
+          <a onClick={() => { isShowModal2(true, row) }}>日志</a>
+          <a onClick={() => { isShowModal3(true, row) }}>配置</a>
+          {
+            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>接口</a>
+          }
+          <a onClick={() => { isShowModal4(true, row) }}>ENV</a>
+        </Space>
+      ),
+    },
+  ];
+  const columnsProd = [
+    {
+      title: '服务名称',
+      dataIndex: 'sname',
+      align: 'center',
+      key: 'sname',
+    },
+    {
+      title: 'API端口号',
+      dataIndex: 'apiport',
+      align: 'center',
+      key: 'apiport',
+    },
+    {
+      title: '服务状态',
+      dataIndex: 'status',
+      key: 'status',
+      hideInSearch: true,
+      align: 'center',
+      render: (_, record) => record.status == 'lost' ? '失联' : record.status == 'good' ? '正常' : record.status == 'fault' ? '故障' : '--',
+    },
+    {
+      title: '镜像更新时间',
+      dataIndex: 'imageupgdtime',
+      align: 'center',
+      key: 'imageupgdtime',
     },
     {
       title: 'Sql升级时间',
@@ -758,7 +855,7 @@ const Index: React.FC = () => {
               rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
               dataSource={serviceList}
               pagination={false}
-              columns={columns}
+              columns={getStorage('env')=='Dev'?columnsDev:getStorage('env')=='Test'?columnsTest:getStorage('env')=='Prod'?columnsProd:columnsDev}
             />
           </div>
         </div>

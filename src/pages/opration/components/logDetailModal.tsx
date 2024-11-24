@@ -143,10 +143,8 @@ const LogDetailModal: React.FC<any> = (props: any) => {
     window.addEventListener('scroll', () => {
       const aftertop = div?.scrollTop;//兼容
       if (aftertop - befortop > 0) {
-        console.log('向下');
-        setIsScroll(false)
+        setIsScroll(true)
       } else {
-        console.log('向上');
         setIsScroll(true)
       }
       befortop = aftertop;

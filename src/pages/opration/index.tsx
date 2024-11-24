@@ -545,7 +545,7 @@ const Index: React.FC = () => {
     window.addEventListener('scroll', () => {
       const aftertop = div?.scrollTop;//兼容
       if (aftertop - befortop > 0) {
-        setIsScroll(false)
+        setIsScroll(true)
       } else {
         setIsScroll(true)
       }
@@ -565,7 +565,7 @@ const Index: React.FC = () => {
     window.addEventListener('scroll', () => {
       const aftertop = div?.scrollTop;//兼容
       if (aftertop - beforetcdtop > 0) {
-        setIsEtcdScroll(false)
+        setIsEtcdScroll(true)
       } else {
         setIsEtcdScroll(true)
       }
@@ -589,6 +589,12 @@ const Index: React.FC = () => {
       key: 'sname',
     },
     {
+      title: 'API端口号',
+      dataIndex: 'sname',
+      align: 'center',
+      key: 'sname',
+    },
+    {
       title: '服务状态',
       dataIndex: 'status',
       key: 'status',
@@ -596,27 +602,42 @@ const Index: React.FC = () => {
       align: 'center',
       render: (_, record) => record.status == 'lost' ? '失联' : record.status == 'good' ? '正常' : record.status == 'fault' ? '故障' : '--',
     },
+    // {
+    //   title: '持续启动时间',
+    //   dataIndex: 'bootupts',
+    //   align: 'center',
+    //   key: 'bootupts',
+    //   render: (_, record) => record.bootupts ? moment(record.bootupts * 1000).format('YYYY-MM-DD HH:mm') : '--',
+    // },
     {
-      title: '启动时间',
-      dataIndex: 'bootupts',
-      align: 'center',
-      key: 'bootupts',
-      render: (_, record) => record.bootupts ? moment(record.bootupts * 1000).format('YYYY-MM-DD HH:mm') : '--',
-    },
-    {
-      title: '镜像时间',
+      title: '镜像构建时间',
       dataIndex: 'buildtime',
       align: 'center',
       key: 'buildtime',
+      hideInTable: getStorage('env') != 'Test',
+    },
+    {
+      title: '镜像更新时间',
+      dataIndex: 'buildtime',
+      align: 'center',
+      key: 'buildtime',
+      hideInTable: getStorage('env') == 'Dev',
+    },
+    {
+      title: 'git地址',
+      dataIndex: 'buildtime',
+      align: 'center',
+      key: 'buildtime',
+      hideInTable: getStorage('env') != 'Dev',
     },
     {
       title: 'Sql升级时间',
-      dataIndex: 'resptime',
+      dataIndex: 'sqltime',
       align: 'center',
-      key: 'resptime',
+      key: 'sqltime',
     },
     {
-      title: '创建时间',
+      title: '持续运行时间',
       dataIndex: 'createtime',
       align: 'center',
       key: 'createtime',
@@ -630,7 +651,9 @@ const Index: React.FC = () => {
         <Space>
           <a onClick={() => { isShowModal2(true, row) }}>日志</a>
           <a onClick={() => { isShowModal3(true, row) }}>配置</a>
-          <a onClick={() => { isShowModal8(true, row) }}>接口</a>
+          {
+            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>接口</a>
+          }
           <a onClick={() => { isShowModal4(true, row) }}>ENV</a>
         </Space>
       ),

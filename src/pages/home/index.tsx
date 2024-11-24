@@ -149,7 +149,8 @@ const Index: React.FC = () => {
                       ? 'list-content-gray'
                       : item.health.status == 'fault'
                         ? 'list-content-red'
-                        : 'list-content-yellow',
+                        :item.health.status == 'good'
+                        ?'list-content-green': 'list-content-yellow',
                   ].join(' ')}>
                     <div className='list-item-wrap'>
                       {

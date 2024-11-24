@@ -40,7 +40,7 @@ export default defineConfig({
   title: false,
   ignoreMomentLocale: true,
   manifest: {
-    basePath: './',
+    basePath: '/',
   },
   // Fast Refresh 热更新
   fastRefresh: {},

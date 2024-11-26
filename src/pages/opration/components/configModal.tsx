@@ -3,6 +3,7 @@ import { Button, Modal } from 'antd';
 import { detectOS } from '@/utils/common';
 import './index.less';
 import { getSconfAPI } from '@/services/version';
+import DisCodeMirrorEditorModal from '@/components/DisableCodeMirror';
 const ConfigModal: React.FC<any> = (props: any) => {
   const { visible, isShowModal,record,branch } = props;
   const [isScroll, setIsScroll] = useState(false)
@@ -63,9 +64,14 @@ const ConfigModal: React.FC<any> = (props: any) => {
       destroyOnClose={true}
     >
       <div className='log-box'>
-        {
+      <DisCodeMirrorEditorModal
+        value={conf}
+        language="javascript"
+        height={500}
+      />
+        {/* {
           <div id='log-box' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: conf }}></div>
-        }
+        } */}
       </div>
     </Modal>
   );

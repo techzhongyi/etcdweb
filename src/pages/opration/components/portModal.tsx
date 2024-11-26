@@ -1,10 +1,11 @@
-import React, { useEffect,useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Modal } from 'antd';
 import { detectOS } from '@/utils/common';
 import './index.less';
 import { getApiAPI } from '@/services/version';
+import DisCodeMirrorEditorModal from '@/components/DisableCodeMirror';
 const PortModal: React.FC<any> = (props: any) => {
-  const { visible, isShowModal,record, branch } = props;
+  const { visible, isShowModal, record, branch } = props;
   const [isScroll, setIsScroll] = useState(false)
   const [port, setPort] = useState('')
   const onModealCancel = () => {
@@ -21,10 +22,10 @@ const PortModal: React.FC<any> = (props: any) => {
     setPort(api)
   }
   useEffect(() => {
-    if(record){
+    if (record) {
       getDetail()
     }
-  },[record])
+  }, [record])
   let befortop = 0
   useEffect(() => {
     const div = document.getElementById('log-box')
@@ -63,9 +64,14 @@ const PortModal: React.FC<any> = (props: any) => {
       destroyOnClose={true}
     >
       <div className='log-box'>
-        {
+        <DisCodeMirrorEditorModal
+          value={port}
+          language="javascript"
+          height={500}
+        />
+        {/* {
           <div id='log-box' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: port }}></div>
-        }
+        } */}
       </div>
     </Modal>
   );

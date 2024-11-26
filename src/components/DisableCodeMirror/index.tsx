@@ -70,7 +70,9 @@ const DisCodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
   const initCodeMirror = () => {
     const editorConfig = {
       tabSize: 2, // 制表符的宽度。默认为 4。
-      fontSize: '16px', // 字体大小
+      fontSize: '14px', // 字体大小
+      line: 5, // 初始光标所在的行号
+      ch: 10, // 初始光标所在行的字符位置
       autoCloseBrackets: true, // 在键入时自动关闭括号和引号
       showCursorWhenSelecting: true, // 当选择处于活动状态时是否应绘制光标。默认为 false。这里设置成自动补全
       lineWrapping: true, // ，CodeMirror 是否应该滚动或换行。默认为false(滚动)。这里设置成换行

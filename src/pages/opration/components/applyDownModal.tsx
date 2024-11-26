@@ -23,7 +23,10 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
 
     const { data:{list} } = await getSqlconfirmAPI(params)
     setInitialValues(list)
-    setDataList(list)
+    setTimeout(() => {
+      setDataList(list)
+    },1000)
+
   }
   useEffect(() => {
     if (record.organize) {

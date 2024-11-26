@@ -35,7 +35,9 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
       organize: record.organize
     }
     const { data: { envs } } = await getEnvConfigListAPI(param)
-    setCode(envs)
+    setTimeout(() => {
+      setCode(envs)
+    },1000)
   }
 
   useEffect(() => {

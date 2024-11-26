@@ -633,12 +633,12 @@ const Index: React.FC = () => {
       width: 180,
       render: (_, row: any) => (
         <Space>
-          <a onClick={() => { isShowModal2(true, row) }}>日志</a>
-          <a onClick={() => { isShowModal3(true, row) }}>配置</a>
+          <a onClick={() => { isShowModal2(true, row) }}>log</a>
+          <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
-            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>接口</a>
+            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>expuri</a>
           }
-          <a onClick={() => { isShowModal4(true, row) }}>ENV</a>
+          <a onClick={() => { isShowModal4(true, row) }}>envs</a>
         </Space>
       ),
     },
@@ -690,12 +690,12 @@ const Index: React.FC = () => {
       width: 180,
       render: (_, row: any) => (
         <Space>
-          <a onClick={() => { isShowModal2(true, row) }}>日志</a>
-          <a onClick={() => { isShowModal3(true, row) }}>配置</a>
+          <a onClick={() => { isShowModal2(true, row) }}>log</a>
+          <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
-            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>接口</a>
+            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>expuri</a>
           }
-          <a onClick={() => { isShowModal4(true, row) }}>ENV</a>
+          <a onClick={() => { isShowModal4(true, row) }}>envs</a>
         </Space>
       ),
     },
@@ -746,12 +746,12 @@ const Index: React.FC = () => {
       width: 180,
       render: (_, row: any) => (
         <Space>
-          <a onClick={() => { isShowModal2(true, row) }}>日志</a>
-          <a onClick={() => { isShowModal3(true, row) }}>配置</a>
+          <a onClick={() => { isShowModal2(true, row) }}>log</a>
+          <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
-            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>接口</a>
+            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>expuri</a>
           }
-          <a onClick={() => { isShowModal4(true, row) }}>ENV</a>
+          <a onClick={() => { isShowModal4(true, row) }}>envs</a>
         </Space>
       ),
     },

@@ -47,7 +47,10 @@ const Index: React.FC = () => {
       organize: getStorage('organize')
     }
     const { data: { envs } } = await getEnvConfigListAPI(param)
-    setCode(envs)
+    setTimeout(() => {
+      setCode(envs)
+    },1000)
+
   }
   // 获取微服务列表
   const getServiceList = async (env) => {
@@ -131,6 +134,7 @@ const Index: React.FC = () => {
                 value={code}
                 language="javascript"
                 onChange={handleCodeChange}
+                height={400}
               />
             </div>
           </div>

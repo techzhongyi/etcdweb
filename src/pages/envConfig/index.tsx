@@ -49,7 +49,7 @@ const Index: React.FC = () => {
     const { data: { envs } } = await getEnvConfigListAPI(param)
     setTimeout(() => {
       setCode(envs)
-    },1000)
+    },500)
 
   }
   // 获取微服务列表

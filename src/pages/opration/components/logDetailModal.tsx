@@ -137,17 +137,24 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       // setWebShh(getStorage('env'))
     }
   };
+  const isScrollAtBottom = (container) => {
+    return container.scrollHeight - container.scrollTop === container.clientHeight;
+  }
   let befortop = 0
   useEffect(() => {
     const div = document.getElementById('log-history')
     window.addEventListener('scroll', () => {
-      const aftertop = div?.scrollTop;//兼容
-      if (aftertop - befortop > 0) {
-        setIsScroll(true)
+      if (isScrollAtBottom(div)) {
+        setIsScroll(false)
       } else {
-        setIsScroll(true)
+        const aftertop = div?.scrollTop;//兼容
+        if (aftertop - befortop > 0) {
+          setIsScroll(true)
+        } else {
+          setIsScroll(true)
+        }
+        befortop = aftertop;
       }
-      befortop = aftertop;
     }, true)
     window.addEventListener('keydown', (e) => {
       if (e.keyCode === 13) {

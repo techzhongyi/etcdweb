@@ -3,7 +3,6 @@ import { Button, Modal, Space } from 'antd';
 import './index.less'
 import CodeMirrorEditorModal from '@/components/CodeMirror';
 import { ProForm } from '@ant-design/pro-components';
-import { getServiceListAPI } from '@/services/comservice';
 import { getEnvConfigListAPI } from '@/services/envConfig';
 let newCode = ''
 const EnvConfigModal: React.FC<any> = (props: any) => {
@@ -37,7 +36,7 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
     const { data: { envs } } = await getEnvConfigListAPI(param)
     setTimeout(() => {
       setCode(envs)
-    },1000)
+    },500)
   }
 
   useEffect(() => {

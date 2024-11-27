@@ -25,7 +25,7 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
     setInitialValues(list)
     setTimeout(() => {
       setDataList(list)
-    },1000)
+    },500)
 
   }
   useEffect(() => {

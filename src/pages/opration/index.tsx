@@ -471,13 +471,16 @@ const Index: React.FC = () => {
     const params = {
       env: getStorage('env'),
       organize: history?.location?.query?.organize,
+      branch: history?.location?.query?.branch,
     }
     const { data } = await getFinishedLastugpAPI(params)
     setInfoDetail(data)
   }
   useEffect(() => {
     setWebShh()
-    setEtcdWebShh()
+    if (getStorage('env') != 'Dev') {
+      setEtcdWebShh()
+    }
     setWebShhApply()
     setWebShhRefresh()
     getServiceList()
@@ -532,24 +535,32 @@ const Index: React.FC = () => {
   }
   // 清屏
   const clearLog = (type) => {
-    if(type == 'devopsCore'){
+    if (type == 'devopsCore') {
       data_ = ''
       setCodeLog('')
-    }else{
+    } else {
       etcd_data = ''
       setEtcdCodeLog('')
     }
   }
+
+  const isScrollAtBottom = (container) => {
+    return container.scrollHeight - container.scrollTop === container.clientHeight;
+  }
   useEffect(() => {
     const div = document.getElementById('log-content')
     window.addEventListener('scroll', () => {
-      const aftertop = div?.scrollTop;//兼容
-      if (aftertop - befortop > 0) {
-        setIsScroll(true)
+      if (isScrollAtBottom(div)) {
+        setIsScroll(false)
       } else {
-        setIsScroll(true)
+        const aftertop = div?.scrollTop;//兼容
+        if (aftertop - befortop > 0) {
+          setIsScroll(true)
+        } else {
+          setIsScroll(true)
+        }
+        befortop = aftertop;
       }
-      befortop = aftertop;
     }, true)
     window.addEventListener('keydown', (e) => {
       if (e.keyCode === 13) {
@@ -563,13 +574,17 @@ const Index: React.FC = () => {
   useEffect(() => {
     const div = document.getElementById('log-etcd-content')
     window.addEventListener('scroll', () => {
-      const aftertop = div?.scrollTop;//兼容
-      if (aftertop - beforetcdtop > 0) {
-        setIsEtcdScroll(true)
+      if (isScrollAtBottom(div)) {
+        setIsEtcdScroll(false)
       } else {
-        setIsEtcdScroll(true)
+        const aftertop = div?.scrollTop;//兼容
+        if (aftertop - befortop > 0) {
+          setIsEtcdScroll(true)
+        } else {
+          setIsEtcdScroll(true)
+        }
+        befortop = aftertop;
       }
-      beforetcdtop = aftertop;
     }, true)
     window.addEventListener('keydown', (e) => {
       if (e.keyCode === 13) {
@@ -636,7 +651,7 @@ const Index: React.FC = () => {
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
           <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
-            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>expuri</a>
+            row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
           }
           <a onClick={() => { isShowModal4(true, row) }}>envs</a>
         </Space>
@@ -693,7 +708,7 @@ const Index: React.FC = () => {
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
           <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
-            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>expuri</a>
+            row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
           }
           <a onClick={() => { isShowModal4(true, row) }}>envs</a>
         </Space>
@@ -749,7 +764,7 @@ const Index: React.FC = () => {
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
           <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
-            row.sname=='httpCore'&&<a onClick={() => { isShowModal8(true, row) }}>expuri</a>
+            row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
           }
           <a onClick={() => { isShowModal4(true, row) }}>envs</a>
         </Space>
@@ -855,7 +870,7 @@ const Index: React.FC = () => {
               rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
               dataSource={serviceList}
               pagination={false}
-              columns={getStorage('env')=='Dev'?columnsDev:getStorage('env')=='Test'?columnsTest:getStorage('env')=='Prod'?columnsProd:columnsDev}
+              columns={getStorage('env') == 'Dev' ? columnsDev : getStorage('env') == 'Test' ? columnsTest : getStorage('env') == 'Prod' ? columnsProd : columnsDev}
             />
           </div>
         </div>

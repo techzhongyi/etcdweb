@@ -106,7 +106,8 @@ const Index: React.FC = () => {
       pathname: '/opration',
       query: {
         organize,
-        branch
+        branch,
+        env
       },
     })
   }
@@ -157,7 +158,7 @@ const Index: React.FC = () => {
                         item.services.map(item_ => {
                           return (
                             <div className='list-item'>
-                              <Tooltip placement="top" title={getTitle(item_)}>
+                              <Tooltip overlayInnerStyle={{width: '600px'}} placement="top" title={getTitle(item_)}>
                                 <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : item_.status == 'init' ? yellow_cloud : red_cloud} alt="" /></div>
                               </Tooltip>
                               <div className='list-item-text'>

@@ -109,7 +109,7 @@ const Index: React.FC = () => {
     setVisible4(show);
     setRecord4({
       ...row,
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       organize: history?.location?.query?.organize
     });
   };
@@ -126,7 +126,7 @@ const Index: React.FC = () => {
   const isShowModal7 = (show: boolean) => {
     setVisible7(show);
     setRecord7({
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       organize: history?.location?.query?.organize
     });
   };
@@ -164,7 +164,7 @@ const Index: React.FC = () => {
   // 发送请求
   const setWebShhRefresh = async () => {
     const data = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
       name: currentUser.name
     }
@@ -221,7 +221,7 @@ const Index: React.FC = () => {
   // 发送请求
   const setWebShhApply = async () => {
     const data = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
       name: currentUser.name
     }
@@ -280,7 +280,7 @@ const Index: React.FC = () => {
   // 发送请求
   const setWebShh = async () => {
     const data = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       sname: 'devopsCore'
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -304,7 +304,6 @@ const Index: React.FC = () => {
     webShh.onerror = function () {
       webShh?.close();
       webShh = null;
-      // setWebShh(getStorage('env'))
     }
   };
   // 保持日志心跳
@@ -326,7 +325,7 @@ const Index: React.FC = () => {
   // 发送请求etcd日志
   const setEtcdWebShh = async () => {
     const data = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       sname: 'devopsCore'
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
@@ -350,7 +349,6 @@ const Index: React.FC = () => {
     webShhEtcd.onerror = function () {
       webShhEtcd?.close();
       webShhEtcd = null;
-      // setWebShh(getStorage('env'))
     }
   };
   // 刷新
@@ -377,7 +375,7 @@ const Index: React.FC = () => {
   const onFinish1 = async (value) => {
     const params = {
       organize: record1.organize,
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       branch: record1.branch,
       revision: value.revision,
     }
@@ -393,7 +391,7 @@ const Index: React.FC = () => {
   // env配置
   const onFinish4 = async (newCode: string) => {
     const param = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       sname: record4.sname,
       envs: newCode,
       organize: history?.location?.query?.organize
@@ -411,7 +409,7 @@ const Index: React.FC = () => {
   const onFinish6 = async (value) => {
     const params = {
       organize: record6.organize,
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       branch: record6.branch,
       content: value.content,
     }
@@ -427,7 +425,7 @@ const Index: React.FC = () => {
   const onFinish7 = async (value, type) => {
     console.log(value)
     const params = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
       sqls: value,
       agree: type ? 'no' : 'yes'
@@ -469,7 +467,7 @@ const Index: React.FC = () => {
   // 获取apply执行结果
   const getApplyResult = async () => {
     const params = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
       branch: history?.location?.query?.branch,
     }
@@ -478,7 +476,7 @@ const Index: React.FC = () => {
   }
   useEffect(() => {
     setWebShh()
-    if (getStorage('env') != 'Dev') {
+    if (history?.location?.query?.env != 'Dev') {
       setEtcdWebShh()
     }
     setWebShhApply()
@@ -515,7 +513,7 @@ const Index: React.FC = () => {
   // 获取service列表
   const getServiceList = async () => {
     const params = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       branch: history?.location?.query?.branch,
       organize: history?.location?.query?.organize,
     }
@@ -525,7 +523,7 @@ const Index: React.FC = () => {
   // 获取version列表
   const getVersionList = async () => {
     const params = {
-      env: getStorage('env'),
+      env: history?.location?.query?.env,
       // branch: history?.location?.query?.branch,
       organize: history?.location?.query?.organize,
       // organize: 'gkzyrent',
@@ -545,6 +543,9 @@ const Index: React.FC = () => {
   }
 
   const isScrollAtBottom = (container) => {
+    if(!container){
+      return
+    }
     return container.scrollHeight - container.scrollTop === container.clientHeight;
   }
   useEffect(() => {
@@ -684,7 +685,7 @@ const Index: React.FC = () => {
       dataIndex: 'gitrepo',
       align: 'center',
       key: 'gitrepo',
-      hideInTable: getStorage('env') != 'Dev',
+      hideInTable: history?.location?.query?.env != 'Dev',
     },
     {
       title: 'Sql升级时间',
@@ -861,7 +862,7 @@ const Index: React.FC = () => {
             <div className='version-info'>
               <div>项目名称: {history?.location?.query?.organize}</div>
               <div>版本号: {history?.location?.query?.branch}</div>
-              <div>环境:{getStorage('env')}</div>
+              <div>环境:{history?.location?.query?.env}</div>
             </div>
           </div>
           <div>
@@ -870,7 +871,7 @@ const Index: React.FC = () => {
               rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
               dataSource={serviceList}
               pagination={false}
-              columns={getStorage('env') == 'Dev' ? columnsDev : getStorage('env') == 'Test' ? columnsTest : getStorage('env') == 'Prod' ? columnsProd : columnsDev}
+              columns={history?.location?.query?.env == 'Dev' ? columnsDev : history?.location?.query?.env == 'Test' ? columnsTest : history?.location?.query?.env == 'Prod' ? columnsProd : columnsDev}
             />
           </div>
         </div>
@@ -915,7 +916,7 @@ const Index: React.FC = () => {
               }}>{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
             </div>
             {
-              getStorage('env') == 'Dev' ? <div className='opration-apply-step'>
+              history?.location?.query?.env == 'Dev' ? <div className='opration-apply-step'>
                 <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Bootup</div>
@@ -925,7 +926,7 @@ const Index: React.FC = () => {
                 <div style={{ color: applyStep == 4 ? '#11BBAA' : '' }}>Sql confirm</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
-              </div> : getStorage('env') == 'Test' ? <div className='opration-apply-step'>
+              </div> : history?.location?.query?.env == 'Test' ? <div className='opration-apply-step'>
                 <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Docker Build</div>
@@ -937,7 +938,7 @@ const Index: React.FC = () => {
                 <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>Sql Confirm</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 6 ? '#11BBAA' : '' }}>End</div>
-              </div> : getStorage('env') == 'Prod' ? <div className='opration-apply-step'>
+              </div> : history?.location?.query?.env == 'Prod' ? <div className='opration-apply-step'>
                 <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
                 <div><img src={long_arrow} alt="" /></div>
                 <div style={{ color: applyStep == 2 ? '#11BBAA' : '' }}>Etcd Upgrade</div>
@@ -989,7 +990,7 @@ const Index: React.FC = () => {
           </div>
         </div>
         {
-          getStorage('env') != 'Dev' && <div className='log-content'>
+          history?.location?.query?.env != 'Dev' && <div className='log-content'>
             <div className='log-titles'>
               <div>etcd日志</div>
             </div>

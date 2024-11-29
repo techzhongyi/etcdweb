@@ -138,6 +138,9 @@ const LogDetailModal: React.FC<any> = (props: any) => {
     }
   };
   const isScrollAtBottom = (container) => {
+    if(!container){
+      return
+    }
     return container.scrollHeight - container.scrollTop === container.clientHeight;
   }
   let befortop = 0

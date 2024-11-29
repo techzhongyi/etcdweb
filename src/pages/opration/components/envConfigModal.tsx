@@ -7,6 +7,7 @@ import { getEnvConfigListAPI } from '@/services/envConfig';
 let newCode = ''
 const EnvConfigModal: React.FC<any> = (props: any) => {
   const { visible, isShowModal, onFinish,record } = props;
+  const title = record.sname + ' ENV配置'
   const onModealCancel = () => {
     isShowModal(false);
   };
@@ -47,7 +48,7 @@ const EnvConfigModal: React.FC<any> = (props: any) => {
   }, [record])
   return (
     <Modal
-      title='ENV配置'
+      title={title}
       width={1280}
       footer={null}
       open={visible}

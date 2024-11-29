@@ -1,10 +1,7 @@
-import {
-  ProForm,
-  ProFormTextArea,
-} from '@ant-design/pro-components';
+import { ProForm, ProFormTextArea } from '@ant-design/pro-components';
 import { Button, Modal, Space } from 'antd';
 import { useEffect, useState } from 'react';
-import { getStorage } from '@/utils/storage';
+import { history } from 'umi';
 import { ProDescriptions } from '@ant-design/pro-components';
 
 const VersionAddOrEditModal: React.FC<any> = (
@@ -64,7 +61,7 @@ const VersionAddOrEditModal: React.FC<any> = (
             {record.branch}
           </ProDescriptions.Item>
           <ProDescriptions.Item valueType="text" label="环境">
-            {getStorage('env')}
+            {history?.location?.query?.env}
           </ProDescriptions.Item>
         </ProDescriptions>
         <ProFormTextArea

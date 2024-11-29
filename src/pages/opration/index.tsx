@@ -3,7 +3,6 @@ import { Button, Space, Table, message } from 'antd';
 import './index.less';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
-import { getStorage } from '@/utils/storage';
 import { history, useModel } from 'umi';
 import { finishedSqlconfirmAPI, getFinishedLastugpAPI } from '@/services/comservice';
 import './index.less'
@@ -116,7 +115,11 @@ const Index: React.FC = () => {
   // envConfig Modal
   const isShowModal5 = (show: boolean, row?: any) => {
     setVisible5(show);
-    setRecord5(row)
+    setRecord5({
+      ...row,
+      env: history?.location?.query?.env,
+      organize: history?.location?.query?.organize
+    });
   };
   // comment Modal
   const isShowModal6 = (show: boolean, row?: any) => {

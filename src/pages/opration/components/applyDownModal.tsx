@@ -3,13 +3,12 @@ import { Card, Modal, Skeleton } from 'antd';
 import CodeMirrorEditorModal from '@/components/CodeMirror';
 import { getSqlconfirmAPI } from '@/services/comservice';
 import { ProDescriptions } from '@ant-design/pro-components';
-import { getStorage } from '@/utils/storage';
 let list_ = []
 const ApplyDownModal: React.FC<any> = (props: any) => {
   const [initialValues, setInitialValues] = useState(undefined);
   const [dataList, setDataList] = useState([]);
   const [isChange, setIsChange] = useState(1);
-  const { visible, isShowModal, onFinish, record } = props;
+  const { visible, onFinish, record } = props;
   const handleCodeChange = (e, index: number) => {
     setIsChange(2)
     list_ = [...dataList]
@@ -17,7 +16,7 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
   };
   const getDetail = async () => {
     const params = {
-      env: getStorage('env'),
+      env: record.env,
       organize: record.organize,
     }
 

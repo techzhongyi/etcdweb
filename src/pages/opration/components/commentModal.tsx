@@ -2,7 +2,7 @@ import React from 'react';
 import { Button, Modal, Space } from 'antd';
 import ProForm, { ProFormTextArea } from '@ant-design/pro-form';
 import './index.less';
-import { getStorage } from '@/utils/storage';
+import { history } from 'umi';
 import { ProDescriptions } from '@ant-design/pro-components';
 const CommentModal: React.FC<any> = (props: any) => {
   const [formObj] = ProForm.useForm();
@@ -48,7 +48,7 @@ const CommentModal: React.FC<any> = (props: any) => {
             {record.branch}
           </ProDescriptions.Item>
           <ProDescriptions.Item valueType="text" label="环境">
-            {getStorage('env')}
+            {history?.location?.query?.env}
           </ProDescriptions.Item>
         </ProDescriptions>
         <ProFormTextArea

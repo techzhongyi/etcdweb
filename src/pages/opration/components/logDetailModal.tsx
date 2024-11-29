@@ -134,7 +134,6 @@ const LogDetailModal: React.FC<any> = (props: any) => {
     webShh.onerror = function () {
       webShh?.close();
       webShh = null;
-      // setWebShh(getStorage('env'))
     }
   };
   const isScrollAtBottom = (container) => {

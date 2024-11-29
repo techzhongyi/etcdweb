@@ -1,16 +1,9 @@
 import { getOpVersionDetailAPI } from '@/services/version';
-import { getStorage } from '@/utils/storage';
-import {
-  ProForm
-} from '@ant-design/pro-components';
-import { Button, List, Modal, Space } from 'antd';
+import { Button, Modal } from 'antd';
 import { useEffect, useState } from 'react';
 
-const VersionDetailModal: React.FC<any> = (
-  props: any,
-) => {
-  const [formObj] = ProForm.useForm();
-  const { visible, isShowModal, onFinish, record, editId } = props;
+const VersionDetailModal: React.FC<any> = ( props: any) => {
+  const { visible, isShowModal, record } = props;
   const [applylogs, setApplylogs] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
   const [revisions, setRevisions] = useState<any[]>([]);
@@ -18,7 +11,7 @@ const VersionDetailModal: React.FC<any> = (
   const getDetail = async () => {
     const params = {
       organize: record.organize,
-      env: getStorage('env'),
+      env: record.env,
       branch: record.branch
     }
     const { data: { applylogs, revisions, comments } } = await getOpVersionDetailAPI(params)

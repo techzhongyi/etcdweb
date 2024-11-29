@@ -1,6 +1,5 @@
 import React, { useEffect,useState } from 'react';
 import { Button, Modal } from 'antd';
-import { detectOS } from '@/utils/common';
 import './index.less';
 import { getSconfAPI } from '@/services/version';
 import DisCodeMirrorEditorModal from '@/components/DisableCodeMirror';

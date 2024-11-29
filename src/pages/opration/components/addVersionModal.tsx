@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Modal, Space } from 'antd';
-import ProForm, { ProFormSelect, ProFormText, ProFormTextArea } from '@ant-design/pro-form';
+import ProForm, { ProFormSelect, ProFormText } from '@ant-design/pro-form';
 import './index.less';
 const AddVersionModal: React.FC<any> = (props: any) => {
   const [formObj] = ProForm.useForm();

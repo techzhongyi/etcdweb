@@ -977,7 +977,7 @@ const Index: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className='log-content'>
+        {/* <div className='log-content'>
           <div className='log-titles'>
             <div>devopsCore日志</div>
           </div>
@@ -991,8 +991,8 @@ const Index: React.FC = () => {
           }}>
             <div> clear </div>
           </div>
-        </div>
-        {
+        </div> */}
+        {/* {
           history?.location?.query?.env != 'Dev' && <div className='log-content'>
             <div className='log-titles'>
               <div>etcd日志</div>
@@ -1008,7 +1008,7 @@ const Index: React.FC = () => {
               <div> clear </div>
             </div>
           </div>
-        }
+        } */}
 
       </div>
       {!visible ? (

@@ -29,6 +29,7 @@ const Index: React.FC = () => {
     },
   ]
   const [dataList, setDataList] = useState<any[]>([])
+  const [isToolOpen, setIsToolOpen] = useState<boolean>(false)
 
   // 环境切换
   const envChange = (e) => {
@@ -73,7 +74,6 @@ const Index: React.FC = () => {
           return
         }
         const data_ = JSON.parse(recv.data);
-        console.log(data_)
         setDataList(data_)
       } else {
         // zsentry.consume(recv.data);
@@ -102,6 +102,9 @@ const Index: React.FC = () => {
   }, [env])
   // toOpratipn
   const toOpratipn = (organize, branch) => {
+    if(isToolOpen){
+      return
+    }
     history.push({
       pathname: '/opration',
       query: {
@@ -121,6 +124,9 @@ const Index: React.FC = () => {
         }
       </div>
     )
+  }
+  const tollTipOpen = (e) => {
+    setIsToolOpen(e)
   }
   return (
     <div className='page-container'>
@@ -158,7 +164,7 @@ const Index: React.FC = () => {
                         item.services.map(item_ => {
                           return (
                             <div className='list-item'>
-                              <Tooltip overlayInnerStyle={{width: '600px'}} placement="top" title={getTitle(item_)}>
+                              <Tooltip onOpenChange={(e) => {tollTipOpen(e)}} overlayInnerStyle={{width: '600px'}} placement="top" title={getTitle(item_)}>
                                 <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : item_.status == 'init' ? yellow_cloud : red_cloud} alt="" /></div>
                               </Tooltip>
                               <div className='list-item-text'>
@@ -170,7 +176,7 @@ const Index: React.FC = () => {
                         })
                       }
                     </div>
-                    <div>
+                    <div className='bottom-info'>
                       <div>hosti: {item.hosti?item.hosti:'-'}</div>
                       <div>os: {item.os?item.os:'-'}  portpeer: {item.portpeer?item.portpeer:'-'}  desc: {item.desc?item.desc:'-'} </div>
                     </div>

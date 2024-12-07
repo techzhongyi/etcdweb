@@ -19,40 +19,11 @@ const LogDetailModal: React.FC<any> = (props: any) => {
   const [pageSize, setPageSize] = useState<number>(10);
   const columns: ProColumns<any>[] = [
     {
-      title: '序号',
-      align: 'center',
-      key: 'index',
-      hideInSearch: true,
-      valueType: 'index',
-      width: 60,
-    },
-    {
-      title: '时间',
-      key: 'logtime',
-      dataIndex: 'logtime',
-      align: 'center',
-      hideInSearch: true,
-    },
-    {
       title: '内容',
       align: 'center',
       dataIndex: 'msg',
       key: 'msg',
       hideInSearch: true,
-    },
-    {
-      title: 'NODE',
-      align: 'center',
-      dataIndex: 'node',
-      key: 'node',
-      ellipsis: true,
-    },
-    {
-      title: 'LEVEL',
-      align: 'center',
-      dataIndex: 'level',
-      key: 'level',
-      ellipsis: true,
     },
     {
       title: '时间范围',
@@ -189,11 +160,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
     <Modal
       title='日志'
       width={1280}
-      footer={[
-        <Button key="back" onClick={onModealCancel}>
-          关闭
-        </Button>,
-      ]}
+      footer={null}
       open={visible}
       maskClosable={false}
       onCancel={onModealCancel}
@@ -203,7 +170,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
         <Tabs.TabPane tab="实时日志" key="1">
           <div className='log-history'>
             {
-              <div id='log-history' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
+              <div id='log-history' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '700px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
             }
             <div className='log-clear' onClick={() => {
               clearLog()
@@ -213,8 +180,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
           </div>
         </Tabs.TabPane>
         <Tabs.TabPane tab="历史日志" key="2">
-          <div className='logs-content'>
-            <div className='log-select-content'>
+            <div className='log-select-content' style={{ height: '700px'}}>
               <ProTable<any>
                 bordered
                 columns={columns}
@@ -244,7 +210,6 @@ const LogDetailModal: React.FC<any> = (props: any) => {
                 headerTitle={false}
                 toolBarRender={false}
               />
-            </div>
           </div>
         </Tabs.TabPane>
       </Tabs>

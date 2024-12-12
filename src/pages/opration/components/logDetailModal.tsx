@@ -17,10 +17,10 @@ const LogDetailModal: React.FC<any> = (props: any) => {
   const [codeLog, setCodeLog] = useState<string>('');
   const [isScroll, setIsScroll] = useState(false)
   const [pageSize, setPageSize] = useState<number>(10);
+  const title = record.sname + '日志'
   const columns: ProColumns<any>[] = [
     {
       title: '内容',
-      align: 'center',
       dataIndex: 'msg',
       key: 'msg',
       hideInSearch: true,
@@ -158,7 +158,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
   }
   return (
     <Modal
-      title='日志'
+      title={title}
       width={1280}
       footer={null}
       open={visible}

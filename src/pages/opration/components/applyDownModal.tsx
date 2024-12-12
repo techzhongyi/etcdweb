@@ -11,8 +11,10 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
   const { visible, onFinish, record } = props;
   const handleCodeChange = (e, index: number) => {
     setIsChange(2)
-    list_ = [...dataList]
+    console.log('index===>',index)
+    console.log('e===>',e)
     list_[index].sql = e
+    console.log('list_===>',list_)
   };
   const getDetail = async () => {
     const params = {
@@ -22,6 +24,7 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
 
     const { data:{list} } = await getSqlconfirmAPI(params)
     setInitialValues(list)
+    list_ = [...dataList]
     setTimeout(() => {
       setDataList(list)
     },500)

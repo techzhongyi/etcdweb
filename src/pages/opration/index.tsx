@@ -188,6 +188,7 @@ const Index: React.FC = () => {
         }
         if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
           setServiceStep(_data.Step + 3)
+          getServiceList()
           if (_data.Result != '') {
             setRefreshTopText(_data.Result)
           }
@@ -245,6 +246,7 @@ const Index: React.FC = () => {
         }
         if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
           setApplyStep(_data.Step + 3)
+          getServiceList()
           getApplyResult()
         }
         setApplyIsDone(!(_data.IsDone))
@@ -478,10 +480,10 @@ const Index: React.FC = () => {
     setInfoDetail(data)
   }
   useEffect(() => {
-    setWebShh()
-    if (history?.location?.query?.env != 'Dev') {
-      setEtcdWebShh()
-    }
+    // setWebShh()
+    // if (history?.location?.query?.env != 'Dev') {
+    //   setEtcdWebShh()
+    // }
     setWebShhApply()
     setWebShhRefresh()
     getServiceList()
@@ -629,9 +631,9 @@ const Index: React.FC = () => {
     },
     {
       title: '镜像更新时间',
-      dataIndex: 'imageupgdtime',
+      dataIndex: 'imageapplytime',
       align: 'center',
-      key: 'imageupgdtime',
+      key: 'imageapplytime',
     },
     {
       title: 'Sql升级时间',
@@ -742,9 +744,9 @@ const Index: React.FC = () => {
     },
     {
       title: '镜像更新时间',
-      dataIndex: 'imageupgdtime',
+      dataIndex: 'imageapplytime',
       align: 'center',
-      key: 'imageupgdtime',
+      key: 'imageapplytime',
     },
     {
       title: 'Sql升级时间',

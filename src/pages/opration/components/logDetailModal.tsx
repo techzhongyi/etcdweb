@@ -85,7 +85,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       organize: record.organize,
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
-    webShh = await webSocket('/devopsCore/logsreal', data, 'servs');
+    webShh = await webSocket('/devopsCore/logsreal', data);
     webShh.onopen = (res: any) => {
       longstart();
     };
@@ -164,13 +164,15 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       open={visible}
       maskClosable={false}
       onCancel={onModealCancel}
+      bodyStyle={{padding:"0 10px"}}
+      style={{ top: '10px'}}
       destroyOnClose={true}
     >
       <Tabs defaultActiveKey="1">
         <Tabs.TabPane tab="实时日志" key="1">
           <div className='log-history'>
             {
-              <div id='log-history' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '700px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
+              <div id='log-history' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '600px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: codeLog }}></div>
             }
             <div className='log-clear' onClick={() => {
               clearLog()
@@ -180,9 +182,10 @@ const LogDetailModal: React.FC<any> = (props: any) => {
           </div>
         </Tabs.TabPane>
         <Tabs.TabPane tab="历史日志" key="2">
-            <div className='log-select-content' style={{ height: '700px'}}>
+            <div className='log-select-content'>
               <ProTable<any>
                 bordered
+                size='small'
                 columns={columns}
                 actionRef={actionRef}
                 formRef={formRef}
@@ -190,6 +193,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
                 editable={{
                   type: 'multiple',
                 }}
+                scroll={{y: '550px'}}
                 columnsState={{
                   persistenceKey: 'pro-table-singe-demos',
                   persistenceType: 'localStorage',

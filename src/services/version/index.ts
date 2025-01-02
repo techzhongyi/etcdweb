@@ -8,6 +8,14 @@ export async function getOpVersionListAPI(options: any) {
     b:'list'
   });
 }
+/** 获取版本列表 select GET /devopsCore/servicelist */
+export async function getVersionListAPI(options: any) {
+  return request('/devopsCore/version', {
+    method: 'GET',
+    params: options,
+    b:'branch'
+  });
+}
 /** 获取版本详情 GET /devopsCore/servicelist */
 export async function getOpVersionDetailAPI(options: any) {
   return request('/devopsCore/version', {

@@ -41,6 +41,8 @@ const VersionDetailModal: React.FC<any> = ( props: any) => {
       ]}
       maskClosable={false}
       destroyOnClose={true}
+      bodyStyle={{padding:"0 10px"}}
+      style={{ top: '10px'}}
       width={1280}
     >
       <div className='detail-content'>
@@ -60,7 +62,7 @@ const VersionDetailModal: React.FC<any> = ( props: any) => {
               }
             </div>
           </div>
-          <div className='Upgrades-info'>
+          {/* <div className='Upgrades-info'>
             <div className='info-title'>升级信息</div>
             <div className='info-content'>
               {
@@ -74,7 +76,7 @@ const VersionDetailModal: React.FC<any> = ( props: any) => {
                 })
               }
             </div>
-          </div>
+          </div> */}
         </div>
         <div className='detail-right'>
           <div className='info-title'>评论信息</div>

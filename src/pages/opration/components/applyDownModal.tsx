@@ -13,6 +13,7 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
     setIsChange(2)
     console.log('index===>',index)
     console.log('e===>',e)
+    console.log('list_===>',list_)
     list_[index].sql = e
     console.log('list_===>',list_)
   };
@@ -24,9 +25,9 @@ const ApplyDownModal: React.FC<any> = (props: any) => {
 
     const { data:{list} } = await getSqlconfirmAPI(params)
     setInitialValues(list)
-    list_ = [...dataList]
     setTimeout(() => {
       setDataList(list)
+      list_ = [...list]
     },500)
 
   }

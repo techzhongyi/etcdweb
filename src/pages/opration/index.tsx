@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Space, Table, message } from 'antd';
 import './index.less';
+import ProForm from '@ant-design/pro-form';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
 import { history, useModel } from 'umi';
@@ -15,7 +16,7 @@ import LogDetailModal from './components/logDetailModal';
 import ConfigModal from './components/configModal';
 import EnvConfigModal from './components/envConfigModal';
 import VersionDetailModal from './components/versionDetailModal';
-import { getOpVersionListAPI, getCommentVersionAPI, getRevisionVersionAPI, getCreateVersionAPI, getMergeVersionAPI } from '@/services/version';
+import { getOpVersionListAPI, getCommentVersionAPI, getRevisionVersionAPI, getCreateVersionAPI, getMergeVersionAPI, getVersionListAPI } from '@/services/version';
 import moment from 'moment';
 import CommentModal from './components/commentModal';
 import ApplyDownModal from './components/applyDownModal';
@@ -23,6 +24,8 @@ import { editEnvConfigAPI } from '@/services/envConfig';
 import PortModal from './components/portModal';
 import AddVersionModal from './components/addVersionModal';
 import MergeModal from './components/mergeModal';
+import { ProFormSelect } from '@ant-design/pro-components';
+
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -38,9 +41,11 @@ let webShhRefresh: any = null,
 let data_ = '';
 let etcd_data = ''
 const Index: React.FC = () => {
+  const [formObj] = ProForm.useForm();
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentUser } = initialState;
   const [isDone, setIsDone] = useState(false)
+  const [branch, setBranch] = useState('')
   const [applyIsDone, setApplyIsDone] = useState(false)
   const [versionList, setVersionList] = useState([])
   const [serviceList, setServiceList] = useState([])
@@ -148,6 +153,7 @@ const Index: React.FC = () => {
     setVisible10(show);
     setRecord10(row)
   };
+
   // 保持步骤心跳
   const longRefreshstart = () => {
     //1、通过关闭定时器和倒计时进行重置心跳
@@ -183,12 +189,13 @@ const Index: React.FC = () => {
           return
         }
         const _data = JSON.parse(recv.data)
+        setBranch(_data.Branch?_data.Branch:'')
         if (_data.Step >= 0 && (!_data.IsDone) && (!_data.Err)) {
           setServiceStep(_data.Step + 2)
         }
         if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
           setServiceStep(_data.Step + 3)
-          getServiceList()
+          getServiceList(formObj.getFieldValue('version'))
           if (_data.Result != '') {
             setRefreshTopText(_data.Result)
           }
@@ -246,8 +253,8 @@ const Index: React.FC = () => {
         }
         if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
           setApplyStep(_data.Step + 3)
-          getServiceList()
-          getApplyResult()
+          getServiceList(formObj.getFieldValue('version'))
+          getApplyResult(formObj.getFieldValue('version'))
         }
         setApplyIsDone(!(_data.IsDone))
         if (_data.Msg != '') {
@@ -366,7 +373,10 @@ const Index: React.FC = () => {
     setRefreshBotText('')
     setServiceStep(1)
     setIsDone(true)
-    webShhRefresh.send('refresh');
+    // webShhRefresh.send('refresh');
+    console.log(formObj.getFieldValue('version'))
+    debugger
+    webShhRefresh.send('refresh??' + formObj.getFieldValue('version'))
   }
   // 应用
   const onFinish = async (value) => {
@@ -381,8 +391,9 @@ const Index: React.FC = () => {
     const params = {
       organize: record1.organize,
       env: history?.location?.query?.env,
-      branch: record1.branch,
+      branch: value.branch.value,
       revision: value.revision,
+      vclosed: value.vclosed == 1 ? 'yes' : 'no',
     }
     const { status, msg } = await getRevisionVersionAPI(params)
     if (status === 0) {
@@ -444,16 +455,10 @@ const Index: React.FC = () => {
   }
   // 创建版本
   const onFinish9 = async (value: any) => {
-    const params = {
-      organize: history?.location?.query?.organize,
-      branch: value.branch,
-      type: value.type
-    }
-    const { status, msg } = await getCreateVersionAPI(params)
-    if (status === 0) {
-      message.success('创建成功')
-    } else {
-      message.error(msg)
+    if(value == 'SUCCESS'){
+      getVersionList()
+      getVersionSelectList()
+      isShowModal9(false)
     }
   }
   // 合并分支
@@ -470,11 +475,11 @@ const Index: React.FC = () => {
     }
   }
   // 获取apply执行结果
-  const getApplyResult = async () => {
+  const getApplyResult = async (branch) => {
     const params = {
       env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
-      branch: history?.location?.query?.branch,
+      branch,
     }
     const { data } = await getFinishedLastugpAPI(params)
     setInfoDetail(data)
@@ -486,9 +491,9 @@ const Index: React.FC = () => {
     // }
     setWebShhApply()
     setWebShhRefresh()
-    getServiceList()
+
     getVersionList()
-    getApplyResult()
+
     return () => {
       clearInterval(timeoutObj);
       clearTimeout(serverTimeoutObj);
@@ -516,10 +521,10 @@ const Index: React.FC = () => {
   let beforetcdtop = 0
 
   // 获取service列表
-  const getServiceList = async () => {
+  const getServiceList = async (branch) => {
     const params = {
       env: history?.location?.query?.env,
-      branch: history?.location?.query?.branch,
+      branch,
       organize: history?.location?.query?.organize,
     }
     const { data: { items } } = await getOpServiceListAPI(params)
@@ -529,7 +534,6 @@ const Index: React.FC = () => {
   const getVersionList = async () => {
     const params = {
       env: history?.location?.query?.env,
-      // branch: history?.location?.query?.branch,
       organize: history?.location?.query?.organize,
       // organize: 'gkzyrent',
     }
@@ -548,7 +552,7 @@ const Index: React.FC = () => {
   }
 
   const isScrollAtBottom = (container) => {
-    if(!container){
+    if (!container) {
       return
     }
     return container.scrollHeight - container.scrollTop === container.clientHeight;
@@ -828,11 +832,37 @@ const Index: React.FC = () => {
       ),
     },
   ];
+  //获取版本列表
+  const getVersionSelectList = async () => {
+    const array: { label: any; value: any }[] = [];
+    const params = {
+      env: history?.location?.query?.env,
+      organize: history?.location?.query?.organize,
+      // organize: 'gkzyrent',
+    }
+    const {
+      data: { items },
+      status,
+    } = await getVersionListAPI(params);
+    if (status === 0) {
+      getServiceList(items[0])
+      getApplyResult(items[0])
+      if (items.length > 0) {
+        formObj.setFieldsValue({
+          version: items[0]
+        })
+      }
+      items?.map((item: any) => {
+        array.push({ label: item, value: item });
+      });
+      return array;
+    } else {
+      return [];
+    }
+  };
   return (
     <div className='page-container'>
-      {/* <Button onClick={() => { isShowModal7(true)}}>7777</Button> */}
       <EtdcHeader />
-
       <div className='page-wrap'>
         <div className='version-list'>
           <div className='tables-titles'>
@@ -841,9 +871,9 @@ const Index: React.FC = () => {
               <Button type="primary" onClick={() => {
                 isShowModal9(true)
               }}>创建版本</Button>
-              <Button type="primary" onClick={() => {
+              {/* <Button type="primary" onClick={() => {
                 isShowModal10(true)
-              }}>合并分支</Button>
+              }}>合并分支</Button> */}
               <Button type="primary" onClick={() => {
                 isShowModal1(true)
               }}>修订版本</Button></Space></div>
@@ -883,10 +913,33 @@ const Index: React.FC = () => {
 
         <div className='opration-refresh'>
           <div className='opration-refresh-title'>
-            <div>
-              <Button type="primary" loading={applyIsDone || isDone} onClick={() => {
+            <div className="title-left">
+              <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={applyIsDone || isDone} onClick={() => {
                 refresh()
               }}>{(applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+              <ProForm form={formObj} submitter={false}>
+                <ProFormSelect
+                  allowClear={false}
+                  label=""
+                  name="version"
+                  width="sm"
+                  request={() => getVersionSelectList()}
+                  placeholder="请选择版本号"
+                  fieldProps={{
+                    onChange: (e) => {
+                      // setUserType(e)
+                      console.log(e)
+                      setBranch(e.value)
+                      getServiceList(e.value)
+                      formObj.setFieldsValue({
+                        version: e.value
+                      })
+                    },
+                    labelInValue: true
+                  }}
+                />
+              </ProForm>
+
             </div>
             <div className='opration-refresh-step'>
               <div style={{ color: serviceStep == 1 ? '#11BBAA' : '' }}>Start</div>
@@ -915,10 +968,11 @@ const Index: React.FC = () => {
         </div>
         <div className='opration-apply'>
           <div className='opration-apply-title'>
-            <div>
+            <div className='opration-apply-title-left'>
               <Button type="primary" loading={applyIsDone || isDone} onClick={() => {
                 isShowModal(true)
               }}>{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+              <div className='apply-branch'>{branch}</div>
             </div>
             {
               history?.location?.query?.env == 'Dev' ? <div className='opration-apply-step'>

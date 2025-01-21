@@ -26,11 +26,17 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       hideInSearch: true,
     },
     {
+      title: '关键字',
+      dataIndex: 'key_word',
+      key: 'key_word',
+      hideInTable: true,
+    },
+    {
       title: '时间范围',
       key: 'range_time',
       dataIndex: 'range_time',
       align: 'center',
-      valueType: 'dateRange',
+      valueType: 'dateTimeRange',
       hideInTable: true,
     },
   ];
@@ -48,6 +54,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       level: params.level ? params.level : '',
       type: params.type ? params.type : '',
       node: params.node ? params.node : '',
+      key_word: params.key_word ? params.key_word : '',
       start: params.range_time ? new Date((params.range_time[0] + ' ' + '00:00:00')).getTime() / 1000 : 0,
       end: params.range_time ? new Date((params.range_time[1] + ' ' + '23:59:59')).getTime() / 1000 : 0,
     };
@@ -164,7 +171,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       open={visible}
       maskClosable={false}
       onCancel={onModealCancel}
-      bodyStyle={{padding:"0 10px"}}
+      bodyStyle={{padding:"0 10px",paddingBottom:'10px'}}
       style={{ top: '10px'}}
       destroyOnClose={true}
     >

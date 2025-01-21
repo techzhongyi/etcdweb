@@ -189,7 +189,7 @@ const Index: React.FC = () => {
           return
         }
         const _data = JSON.parse(recv.data)
-        setBranch(_data.Branch?_data.Branch:'')
+        setBranch(_data.Branch ? _data.Branch : '')
         if (_data.Step >= 0 && (!_data.IsDone) && (!_data.Err)) {
           setServiceStep(_data.Step + 2)
         }
@@ -388,20 +388,25 @@ const Index: React.FC = () => {
   }
   // 修订版本
   const onFinish1 = async (value) => {
-    const params = {
-      organize: record1.organize,
-      env: history?.location?.query?.env,
-      branch: value.branch.value,
-      revision: value.revision,
-      vclosed: value.vclosed == 1 ? 'yes' : 'no',
-    }
-    const { status, msg } = await getRevisionVersionAPI(params)
-    if (status === 0) {
+    // const params = {
+    //   organize: record1.organize,
+    //   env: history?.location?.query?.env,
+    //   branch: value.branch.value,
+    //   revision: value.revision,
+    //   vclosed: value.vclosed == 1 ? 'yes' : 'no',
+    // }
+    // const { status, msg } = await getRevisionVersionAPI(params)
+    // if (status === 0) {
+    //   isShowModal1(false)
+    //   message.success('版本修订成功')
+    //   getVersionList()
+    // } else {
+    //   message.error(msg)
+    // }
+    if (value == 'SUCCESS') {
       isShowModal1(false)
       message.success('版本修订成功')
       getVersionList()
-    } else {
-      message.error(msg)
     }
   }
   // env配置
@@ -455,7 +460,7 @@ const Index: React.FC = () => {
   }
   // 创建版本
   const onFinish9 = async (value: any) => {
-    if(value == 'SUCCESS'){
+    if (value == 'SUCCESS') {
       getVersionList()
       getVersionSelectList()
       isShowModal9(false)

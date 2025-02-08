@@ -6,6 +6,7 @@ import './index.less'
 import { getLogsinfluxListAPI } from '@/services/log';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
+import moment from 'moment';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
@@ -16,7 +17,7 @@ const LogDetailModal: React.FC<any> = (props: any) => {
   const formRef = useRef();
   const [codeLog, setCodeLog] = useState<string>('');
   const [isScroll, setIsScroll] = useState(false)
-  const [pageSize, setPageSize] = useState<number>(10);
+  const [pageSize, setPageSize] = useState<number>(100);
   const title = record.sname + '日志'
   const columns: ProColumns<any>[] = [
     {
@@ -55,8 +56,8 @@ const LogDetailModal: React.FC<any> = (props: any) => {
       type: params.type ? params.type : '',
       node: params.node ? params.node : '',
       key_word: params.key_word ? params.key_word : '',
-      start: params.range_time ? new Date((params.range_time[0] + ' ' + '00:00:00')).getTime() / 1000 : 0,
-      end: params.range_time ? new Date((params.range_time[1] + ' ' + '23:59:59')).getTime() / 1000 : 0,
+      start: params.range_time ? new Date((params.range_time[0])).getTime() / 1000 : new Date((moment(new Date()).format('YYYY-MM-DD') + ' '+ '00:00:00')).getTime() / 1000,
+      end: params.range_time ? new Date((params.range_time[1])).getTime() / 1000 : new Date((moment(new Date()).format('YYYY-MM-DD') + ' '+ '23:59:59')).getTime() / 1000,
     };
     const {
       data: { list, total },

@@ -79,9 +79,9 @@ const VersionAddOrEditModal: React.FC<any> = (
   const setWebShhVersion = async () => {
     const params = {
       organize: history?.location?.query?.organize,
-      branch: formObj.getFieldValue('branch'),
+      branch: formObj.getFieldValue('branch').value,
       revision: formObj.getFieldValue('revision'),
-      type: formObj.getFieldValue('type') == 1 ? 'yes' : 'no'
+      vclosed: formObj.getFieldValue('vclosed') == 1 ? 'yes' : 'no',
     }
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhVersion = await webSocket('/devopsCore/wsrevision', params);
@@ -94,7 +94,7 @@ const VersionAddOrEditModal: React.FC<any> = (
         if (recv.data == 'pong' || recv.data == 'null') {
           return
         } else if (recv.data == 'SUCCESS') {
-          message.success('创建成功')
+          // message.success('创建成功')
           onFinish('SUCCESS')
           webShhVersion?.close();
           webShhVersion = null;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Space, Table, message } from 'antd';
+import { Button, Popconfirm, Space, Table, message } from 'antd';
 import './index.less';
 import ProForm from '@ant-design/pro-form';
 import { detectOS } from '@/utils/common';
@@ -38,6 +38,9 @@ let webShhApply: any = null,
 let webShhRefresh: any = null,
   timeoutObjRefresh: any = undefined,
   serverTimeoutObjRefresh: any = undefined;
+let webShhDepoly: any = null,
+  timeoutObjDepoly: any = undefined,
+  serverTimeoutObjDepoly: any = undefined;
 let data_ = '';
 let etcd_data = ''
 const Index: React.FC = () => {
@@ -45,6 +48,7 @@ const Index: React.FC = () => {
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentUser } = initialState;
   const [isDone, setIsDone] = useState(false)
+  const [isDepolyDone, setIsDepolyDone] = useState(false)
   const [branch, setBranch] = useState('')
   const [applyIsDone, setApplyIsDone] = useState(false)
   const [versionList, setVersionList] = useState([])
@@ -215,6 +219,58 @@ const Index: React.FC = () => {
     }
   };
   // 保持步骤心跳
+  const longDepolystart = () => {
+    //1、通过关闭定时器和倒计时进行重置心跳
+    clearInterval(timeoutObjDepoly);
+    clearTimeout(serverTimeoutObjDepoly);
+    // 2、每隔3s向后端发送一条商议好的数据
+    timeoutObjDepoly = setInterval(() => {
+      // webShhRefresh?.readyState == 1 正常连接
+      if (webShhDepoly?.readyState === 1) {
+        webShhDepoly.send('ping');
+      } else {
+        // webShhRefresh?.readyState != 1 连接异常 重新建立连接
+        setWebShhDepoly()
+      }
+    }, 3000);
+  };
+  // 发送请求
+  const setWebShhDepoly = async () => {
+    const data = {
+      env: history?.location?.query?.env,
+      organize: history?.location?.query?.organize,
+    }
+    // 必须设置格式为arraybuffer，zmodem 才可以使用
+    webShhDepoly = await webSocket('/devopsCore/deploywebdist', data);
+    webShhDepoly.onopen = (res: any) => {
+      longDepolystart()
+    };
+    // 回调
+    webShhDepoly.onmessage = function (recv: any) {
+      if (typeof (recv.data) === 'string') {
+        if (recv.data == 'pong' || recv.data == 'null') {
+          return
+        }
+        if (recv.data == 'SUCCESS') {
+          message.success('操作成功')
+          clearInterval(timeoutObjDepoly);
+          clearTimeout(serverTimeoutObjDepoly);
+          webShhDepoly.close();
+          setIsDepolyDone(false)
+        }
+        // setIsDone(!(_data.IsDone))
+      } else {
+        setIsDepolyDone(false)
+        // zsentry.consume(recv.data);
+      }
+    };
+    // 报错
+    webShhDepoly.onerror = function () {
+      webShhDepoly?.close();
+      webShhDepoly = null;
+    }
+  };
+  // 保持步骤心跳
   const longApplystart = () => {
     //1、通过关闭定时器和倒计时进行重置心跳
     clearInterval(timeoutObjApply);
@@ -373,10 +429,12 @@ const Index: React.FC = () => {
     setRefreshBotText('')
     setServiceStep(1)
     setIsDone(true)
-    // webShhRefresh.send('refresh');
-    console.log(formObj.getFieldValue('version'))
-    debugger
     webShhRefresh.send('refresh??' + formObj.getFieldValue('version'))
+  }
+  // depoly
+  const depoly = () => {
+    setWebShhDepoly()
+    setIsDepolyDone(true)
   }
   // 应用
   const onFinish = async (value) => {
@@ -506,6 +564,8 @@ const Index: React.FC = () => {
       clearTimeout(serverTimeoutObjApply);
       clearInterval(timeoutObjRefresh);
       clearTimeout(serverTimeoutObjRefresh);
+      clearInterval(timeoutObjDepoly);
+      clearTimeout(serverTimeoutObjDepoly);
       clearInterval(timeoutObjEtcd);
       clearTimeout(serverTimeoutObjEtcd);
       if (webShh) {
@@ -520,10 +580,12 @@ const Index: React.FC = () => {
       if (webShhEtcd) {
         webShhEtcd.close();
       }
+      if (webShhDepoly) {
+        webShhDepoly.close();
+      }
     }
   }, [])
   let befortop = 0
-  let beforetcdtop = 0
 
   // 获取service列表
   const getServiceList = async (branch) => {
@@ -664,11 +726,27 @@ const Index: React.FC = () => {
       render: (_, row: any) => (
         <Space>
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
-          <a onClick={() => { isShowModal3(true, row) }}>config</a>
+          {/* <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
             row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
+          } */}
+          {
+            history?.location?.query?.env == 'Prod' && <Popconfirm
+              onConfirm={async () => {
+                isShowModal4(true, row)
+              }}
+              key="popconfirm"
+              title="当前环境为生产环境,是否继续?"
+              okText="是"
+              cancelText="否"
+            >
+              <a>envs</a>
+            </Popconfirm>
           }
-          <a onClick={() => { isShowModal4(true, row) }}>envs</a>
+          {
+            history?.location?.query?.env != 'Prod' &&
+            <a onClick={() => { isShowModal4(true, row) }}>envs</a>
+          }
         </Space>
       ),
     },
@@ -721,11 +799,27 @@ const Index: React.FC = () => {
       render: (_, row: any) => (
         <Space>
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
-          <a onClick={() => { isShowModal3(true, row) }}>config</a>
+          {/* <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
             row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
+          } */}
+          {
+            history?.location?.query?.env == 'Prod' && <Popconfirm
+              onConfirm={async () => {
+                isShowModal4(true, row)
+              }}
+              key="popconfirm"
+              title="当前环境为生产环境,是否继续?"
+              okText="是"
+              cancelText="否"
+            >
+              <a>envs</a>
+            </Popconfirm>
           }
-          <a onClick={() => { isShowModal4(true, row) }}>envs</a>
+          {
+            history?.location?.query?.env != 'Prod' &&
+            <a onClick={() => { isShowModal4(true, row) }}>envs</a>
+          }
         </Space>
       ),
     },
@@ -777,11 +871,27 @@ const Index: React.FC = () => {
       render: (_, row: any) => (
         <Space>
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
-          <a onClick={() => { isShowModal3(true, row) }}>config</a>
+          {/* <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
             row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
+          } */}
+          {
+            history?.location?.query?.env == 'Prod' && <Popconfirm
+              onConfirm={async () => {
+                isShowModal4(true, row)
+              }}
+              key="popconfirm"
+              title="当前环境为生产环境,是否继续?"
+              okText="是"
+              cancelText="否"
+            >
+              <a>envs</a>
+            </Popconfirm>
           }
-          <a onClick={() => { isShowModal4(true, row) }}>envs</a>
+          {
+            history?.location?.query?.env != 'Prod' &&
+            <a onClick={() => { isShowModal4(true, row) }}>envs</a>
+          }
         </Space>
       ),
     },
@@ -872,7 +982,7 @@ const Index: React.FC = () => {
         <div className='version-list'>
           <div className='tables-titles'>
             <div>Version</div>
-            <div><Space>
+            {history?.location?.query?.env == 'Dev' && <div><Space>
               <Button type="primary" onClick={() => {
                 isShowModal9(true)
               }}>创建版本</Button>
@@ -881,7 +991,7 @@ const Index: React.FC = () => {
               }}>合并分支</Button> */}
               <Button type="primary" onClick={() => {
                 isShowModal1(true)
-              }}>修订版本</Button></Space></div>
+              }}>修订版本</Button></Space></div>}
           </div>
           <div>
             <Table
@@ -919,9 +1029,44 @@ const Index: React.FC = () => {
         <div className='opration-refresh'>
           <div className='opration-refresh-title'>
             <div className="title-left">
-              <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={applyIsDone || isDone} onClick={() => {
-                refresh()
-              }}>{(applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+              <Space>
+                {
+                  history?.location?.query?.env == 'Prod' && <Popconfirm
+                    onConfirm={async () => {
+                      refresh()
+                    }}
+                    key="popconfirm"
+                    title="当前环境为生产环境,是否继续?"
+                    okText="是"
+                    cancelText="否"
+                  >
+                    <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={applyIsDone || isDone} >{(applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+                  </Popconfirm>
+                }
+                {
+                  history?.location?.query?.env != 'Prod' && <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={applyIsDone || isDone} onClick={() => {
+                    refresh()
+                  }}>{(applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+                }
+                {
+                  history?.location?.query?.env == 'Prod' && <Popconfirm
+                    onConfirm={async () => {
+                      depoly()
+                    }}
+                    key="popconfirm"
+                    title="当前环境为生产环境,是否继续?"
+                    okText="是"
+                    cancelText="否"
+                  >
+                    <Button type="primary" loading={isDepolyDone} >{(isDepolyDone) ? 'waiting...' : 'Web Depoly'}</Button>
+                  </Popconfirm>
+                }
+                {
+                  history?.location?.query?.env != 'Prod' && <Button type="primary" loading={isDepolyDone} onClick={() => {
+                    depoly()
+                  }}>{(isDepolyDone) ? 'waiting...' : 'Web Depoly'}</Button>
+                }
+              </Space>
               <ProForm form={formObj} submitter={false}>
                 <ProFormSelect
                   allowClear={false}
@@ -944,7 +1089,6 @@ const Index: React.FC = () => {
                   }}
                 />
               </ProForm>
-
             </div>
             <div className='opration-refresh-step'>
               <div style={{ color: serviceStep == 1 ? '#11BBAA' : '' }}>Start</div>
@@ -952,8 +1096,8 @@ const Index: React.FC = () => {
               <div style={{ color: serviceStep == 2 ? '#11BBAA' : '' }}>Repo Sync</div>
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: serviceStep == 3 ? '#11BBAA' : '' }}>Project Scan</div>
-              <div><img src={long_arrow} alt="" /></div>
-              <div style={{ color: serviceStep == 4 ? '#11BBAA' : '' }}>Web Depoly</div>
+              {/* <div><img src={long_arrow} alt="" /></div> */}
+              {/* <div style={{ color: serviceStep == 4 ? '#11BBAA' : '' }}>Web Depoly</div> */}
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: serviceStep == 5 ? '#11BBAA' : '' }}>End</div>
             </div>
@@ -974,9 +1118,25 @@ const Index: React.FC = () => {
         <div className='opration-apply'>
           <div className='opration-apply-title'>
             <div className='opration-apply-title-left'>
-              <Button type="primary" loading={applyIsDone || isDone} onClick={() => {
-                isShowModal(true)
-              }}>{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+              {
+                history?.location?.query?.env == 'Prod' && <Popconfirm
+                  onConfirm={async () => {
+                    isShowModal(true)
+                  }}
+                  key="popconfirm"
+                  title="当前环境为生产环境,是否继续?"
+                  okText="是"
+                  cancelText="否"
+                >
+                  <Button type="primary" loading={applyIsDone || isDone} >{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+                </Popconfirm>
+              }
+              {
+                history?.location?.query?.env != 'Prod' && <Button type="primary" loading={applyIsDone || isDone} onClick={() => {
+                  isShowModal(true)
+                }}>{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+              }
+
               <div className='apply-branch'>{branch}</div>
             </div>
             {

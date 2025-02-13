@@ -239,7 +239,9 @@ const Index: React.FC = () => {
     const data = {
       env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
+      branch: formObj.getFieldValue('version'),
     }
+    debugger
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhDepoly = await webSocket('/devopsCore/deploywebdist', data);
     webShhDepoly.onopen = (res: any) => {

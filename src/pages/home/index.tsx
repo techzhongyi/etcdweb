@@ -9,11 +9,22 @@ import red_cloud from '../../../public/icons/ectd/red_cloud.png'
 import gray_cloud from '../../../public/icons/ectd/gray_cloud.png'
 import yellow_cloud from '../../../public/icons/ectd/yellow_cloud.png'
 import EtdcHeader from '@/components/NewHeader';
+import DetailModal from './components/detailModal';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
 const Index: React.FC = () => {
+  const [visible, setVisible] = useState<boolean>(false);
+  const [record, setRecord] = useState<any | undefined>(undefined);
   const [env, setEnv] = useState(getStorage('env') || 'Dev')
+  // 详情Modal
+  const isShowModal = (event,show: boolean, row?: any) => {
+    if(show){
+      event.stopPropagation();
+    }
+    setVisible(show);
+    setRecord(row);
+  };
   const envArray = [
     {
       label: 'Dev',
@@ -149,7 +160,9 @@ const Index: React.FC = () => {
                   <div className='list-title'>
                     <div>{item.organize}:{item.name}({item.ip})</div>
                     <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
-                    <div>{item.sourcebranch}</div>
+                    <a className='content-detail' onClick={(e) => {
+                      isShowModal(e,true,item)
+                    }}>详情</a>
                   </div>
                   <div className={['list-content',
                     item.health.status == 'lost'
@@ -176,10 +189,6 @@ const Index: React.FC = () => {
                         })
                       }
                     </div>
-                    <div className='bottom-info'>
-                      <div>hosti: {item.hosti?item.hosti:'-'}</div>
-                      <div>os: {item.os?item.os:'-'}  portpeer: {item.portpeer?item.portpeer:'-'}  desc: {item.desc?item.desc:'-'} </div>
-                    </div>
                   </div>
 
                 </div>
@@ -188,6 +197,15 @@ const Index: React.FC = () => {
           }
         </div> : <></>
       }
+      {!visible ? (
+        ''
+      ) : (
+        <DetailModal
+          visible={visible}
+          isShowModal={isShowModal}
+          record={record}
+        />
+      )}
     </div>
   );
 };

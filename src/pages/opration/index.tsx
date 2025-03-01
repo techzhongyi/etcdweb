@@ -5,9 +5,10 @@ import ProForm from '@ant-design/pro-form';
 import { detectOS } from '@/utils/common';
 import { webSocket } from '@/utils/socket';
 import { history, useModel } from 'umi';
-import { finishedSqlconfirmAPI, getFinishedLastugpAPI } from '@/services/comservice';
+import logo from '../../../public/icons/new_logo.png';
+import user_icon from '../../../public/icons/user_icon.png';
+import { finishedSqlconfirmAPI, getDepolyFinishedLastugpAPI, getFinishedLastugpAPI } from '@/services/comservice';
 import './index.less'
-import EtdcHeader from '@/components/NewHeader';
 import long_arrow from '../../../public/icons/ectd/long_arrow.png'
 import { getOpServiceListAPI } from '@/services/opration';
 import ApplyModal from './components/applyModal';
@@ -16,7 +17,7 @@ import LogDetailModal from './components/logDetailModal';
 import ConfigModal from './components/configModal';
 import EnvConfigModal from './components/envConfigModal';
 import VersionDetailModal from './components/versionDetailModal';
-import { getOpVersionListAPI, getCommentVersionAPI, getRevisionVersionAPI, getCreateVersionAPI, getMergeVersionAPI, getVersionListAPI } from '@/services/version';
+import { getOpVersionListAPI, getCommentVersionAPI, getMergeVersionAPI, getVersionListAPI } from '@/services/version';
 import moment from 'moment';
 import CommentModal from './components/commentModal';
 import ApplyDownModal from './components/applyDownModal';
@@ -25,6 +26,8 @@ import PortModal from './components/portModal';
 import AddVersionModal from './components/addVersionModal';
 import MergeModal from './components/mergeModal';
 import { ProFormSelect } from '@ant-design/pro-components';
+import { clearAllStorage } from '@/utils/storage';
+import { DownOutlined, LogoutOutlined, RightOutlined } from '@ant-design/icons';
 
 let webShh: any = null,
   timeoutObj: any = undefined,
@@ -44,24 +47,42 @@ let webShhDepoly: any = null,
 let data_ = '';
 let etcd_data = ''
 const Index: React.FC = () => {
+  // 退出登录
+  const logout = () => {
+    message.success('退出成功');
+    setInitialState((s) => ({ ...s, currentUser: undefined }));
+    clearAllStorage();
+    history.replace({
+      pathname: '/user/login',
+    })
+  }
+  const goHome = () => {
+    history.replace({
+      pathname: '/home',
+    })
+  }
   const [formObj] = ProForm.useForm();
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentUser } = initialState;
+  const [isShow, setIsShow] = useState(false)
   const [isDone, setIsDone] = useState(false)
   const [isDepolyDone, setIsDepolyDone] = useState(false)
   const [branch, setBranch] = useState('')
   const [applyIsDone, setApplyIsDone] = useState(false)
   const [versionList, setVersionList] = useState([])
   const [serviceList, setServiceList] = useState([])
+  const [depolyList, setDepolyList] = useState([])
   const [codeLog, setCodeLog] = useState<string>('');
   const [etcdCodeLog, setEtcdCodeLog] = useState<string>('');
   const [isScroll, setIsScroll] = useState(false)
   const [isEtcdScroll, setIsEtcdScroll] = useState(false)
   const [serviceStep, setServiceStep] = useState(-1)
   const [applyStep, setApplyStep] = useState(-1)
+  const [depolyStep, setDepolyStep] = useState(-1)
   const [refreshTopText, setRefreshTopText] = useState('')
   const [refreshBotText, setRefreshBotText] = useState('')
   const [applyBotText, setApplyBotText] = useState('')
+  const [depolyBotText, setDepolyBotText] = useState('')
   const [visible, setVisible] = useState<boolean>(false);
   const [visible1, setVisible1] = useState<boolean>(false);
   const [record1, setRecord1] = useState<any>({});
@@ -84,6 +105,12 @@ const Index: React.FC = () => {
   const [visible10, setVisible10] = useState<boolean>(false);
   const [record10, setRecord10] = useState<any>({});
   const [infoDetail, setInfoDetail] = useState<any>({
+    stsd: null,
+    success: '',
+    info: '',
+    error: ''
+  });
+  const [infoDepolyDetail, setInfoDepolyDetail] = useState<any>({
     stsd: null,
     success: '',
     info: '',
@@ -239,9 +266,9 @@ const Index: React.FC = () => {
     const data = {
       env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
-      branch: formObj.getFieldValue('version'),
+      // branch: formObj.getFieldValue('version'),
     }
-    debugger
+    // debugger
     // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhDepoly = await webSocket('/devopsCore/deploywebdist', data);
     webShhDepoly.onopen = (res: any) => {
@@ -253,13 +280,26 @@ const Index: React.FC = () => {
         if (recv.data == 'pong' || recv.data == 'null') {
           return
         }
-        if (recv.data == 'SUCCESS') {
-          message.success('操作成功')
-          clearInterval(timeoutObjDepoly);
-          clearTimeout(serverTimeoutObjDepoly);
-          webShhDepoly.close();
-          setIsDepolyDone(false)
+        const _data = JSON.parse(recv.data)
+        // if (_data.Step >= 0 && (!_data.IsDone) && (!_data.Err)) {
+        //   setDepolyStep(_data.Step + 2)
+        // }
+        // if (_data.Step >= 0 && (_data.IsDone) && (!_data.Err)) {
+        //   setDepolyStep(_data.Step + 3)
+        //   // getServiceList(formObj.getFieldValue('version'))
+        //   // getApplyResult(formObj.getFieldValue('version'))
+        // }
+        setIsDepolyDone(!(_data.IsDone))
+        if (_data.Msg != '') {
+          setDepolyBotText(_data.Msg)
         }
+        // if (recv.data == 'SUCCESS') {
+        //   message.success('操作成功')
+        //   clearInterval(timeoutObjDepoly);
+        //   clearTimeout(serverTimeoutObjDepoly);
+        //   webShhDepoly.close();
+        //   setIsDepolyDone(false)
+        // }
         // setIsDone(!(_data.IsDone))
       } else {
         setIsDepolyDone(false)
@@ -313,6 +353,7 @@ const Index: React.FC = () => {
           setApplyStep(_data.Step + 3)
           getServiceList(formObj.getFieldValue('version'))
           getApplyResult(formObj.getFieldValue('version'))
+          getDepolyResult(formObj.getFieldValue('version'))
         }
         setApplyIsDone(!(_data.IsDone))
         if (_data.Msg != '') {
@@ -435,8 +476,15 @@ const Index: React.FC = () => {
   }
   // depoly
   const depoly = () => {
+    if (!webShhDepoly) {
+      message.error('网络连接错误,请稍后再试...')
+      return
+    }
+    setDepolyBotText('')
+    setDepolyStep(1)
     setWebShhDepoly()
     setIsDepolyDone(true)
+    webShhDepoly.send('Deploy??' + formObj.getFieldValue('version'))
   }
   // 应用
   const onFinish = async (value) => {
@@ -448,21 +496,6 @@ const Index: React.FC = () => {
   }
   // 修订版本
   const onFinish1 = async (value) => {
-    // const params = {
-    //   organize: record1.organize,
-    //   env: history?.location?.query?.env,
-    //   branch: value.branch.value,
-    //   revision: value.revision,
-    //   vclosed: value.vclosed == 1 ? 'yes' : 'no',
-    // }
-    // const { status, msg } = await getRevisionVersionAPI(params)
-    // if (status === 0) {
-    //   isShowModal1(false)
-    //   message.success('版本修订成功')
-    //   getVersionList()
-    // } else {
-    //   message.error(msg)
-    // }
     if (value == 'SUCCESS') {
       isShowModal1(false)
       message.success('版本修订成功')
@@ -549,16 +582,21 @@ const Index: React.FC = () => {
     const { data } = await getFinishedLastugpAPI(params)
     setInfoDetail(data)
   }
+  // 获取depoly执行结果
+  const getDepolyResult = async (branch) => {
+    const params = {
+      // env: history?.location?.query?.env,
+      organize: history?.location?.query?.organize,
+      // branch,
+    }
+    const { data: { items } } = await getDepolyFinishedLastugpAPI(params)
+    setDepolyList(items)
+  }
   useEffect(() => {
-    // setWebShh()
-    // if (history?.location?.query?.env != 'Dev') {
-    //   setEtcdWebShh()
-    // }
     setWebShhApply()
     setWebShhRefresh()
-
+    setWebShhDepoly()
     getVersionList()
-
     return () => {
       clearInterval(timeoutObj);
       clearTimeout(serverTimeoutObj);
@@ -604,7 +642,6 @@ const Index: React.FC = () => {
     const params = {
       env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
-      // organize: 'gkzyrent',
     }
     const { data: { items } } = await getOpVersionListAPI(params)
     setVersionList(items)
@@ -674,7 +711,28 @@ const Index: React.FC = () => {
       div.scrollTop = div.scrollHeight
     }
   }, [etcdCodeLog])
+  const columnsDepoly = [
+    {
+      title: '项目名称',
+      dataIndex: 'projName',
+      key: 'projName',
+      hideInSearch: true,
+      align: 'center',
+    },
+    {
+      title: 'git地址',
+      dataIndex: 'gitRepo',
+      align: 'center',
+      key: 'gitRepo',
+    },
+    {
+      title: '部署地址',
+      dataIndex: 'nginxRoot',
+      align: 'center',
+      key: 'nginxRoot',
+    },
 
+  ];
   const columnsTest = [
     {
       title: '服务名称',
@@ -801,10 +859,6 @@ const Index: React.FC = () => {
       render: (_, row: any) => (
         <Space>
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
-          {/* <a onClick={() => { isShowModal3(true, row) }}>config</a>
-          {
-            row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
-          } */}
           {
             history?.location?.query?.env == 'Prod' && <Popconfirm
               onConfirm={async () => {
@@ -873,10 +927,6 @@ const Index: React.FC = () => {
       render: (_, row: any) => (
         <Space>
           <a onClick={() => { isShowModal2(true, row) }}>log</a>
-          {/* <a onClick={() => { isShowModal3(true, row) }}>config</a>
-          {
-            row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
-          } */}
           {
             history?.location?.query?.env == 'Prod' && <Popconfirm
               onConfirm={async () => {
@@ -955,7 +1005,6 @@ const Index: React.FC = () => {
     const params = {
       env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
-      // organize: 'gkzyrent',
     }
     const {
       data: { items },
@@ -964,6 +1013,7 @@ const Index: React.FC = () => {
     if (status === 0) {
       getServiceList(items[0])
       getApplyResult(items[0])
+      getDepolyResult(items[0])
       if (items.length > 0) {
         formObj.setFieldsValue({
           version: items[0]
@@ -977,9 +1027,57 @@ const Index: React.FC = () => {
       return [];
     }
   };
+  const getShow = () => {
+    setIsShow(!isShow)
+  }
   return (
     <div className='page-container'>
-      <EtdcHeader />
+      <div className='page-header'>
+        <div className='page-header-logo' onClick={() => { goHome() }}>
+          <img src={logo} alt="" />
+        </div>
+        <div className='page-header-title'>{history?.location?.query?.organize}({history?.location?.query?.env})</div>
+        <div className='page-header-action'>
+          <div>
+            <div className='user-branch'>
+              <ProForm form={formObj} submitter={false}>
+                <ProFormSelect
+                  allowClear={false}
+                  label=""
+                  name="version"
+                  width="sm"
+                  request={() => getVersionSelectList()}
+                  placeholder="请选择版本号"
+                  fieldProps={{
+                    onChange: (e) => {
+                      setBranch(e.value)
+                      getServiceList(e.value)
+                      formObj.setFieldsValue({
+                        version: e.value
+                      })
+                    },
+                    labelInValue: true
+                  }}
+                />
+              </ProForm>
+            </div>
+            <div className='user-icon'><img src={user_icon} alt="" /></div>
+            <div className='user-name'>{currentUser.name}</div>
+          </div>
+          <div>
+            <Popconfirm
+              onConfirm={() => { logout() }}
+              key="popconfirm"
+              title="确认退出登录?"
+              okText="是"
+              cancelText="否"
+            >
+              <LogoutOutlined style={{ fontSize: '22px' }} />
+            </Popconfirm>
+
+          </div>
+        </div>
+      </div>
       <div className='page-wrap'>
         <div className='version-list'>
           <div className='tables-titles'>
@@ -1010,21 +1108,19 @@ const Index: React.FC = () => {
         </div>
         <div className='service-list'>
           <div className='tables-titles'>
-            <div>Service</div>
-            <div className='version-info'>
-              <div>项目名称: {history?.location?.query?.organize}</div>
-              <div>版本号: {history?.location?.query?.branch}</div>
-              <div>环境:{history?.location?.query?.env}</div>
-            </div>
+            <div className='tables-titles-arrow' onClick={() => { getShow() }}>Service{!isShow ? <DownOutlined /> : <RightOutlined />}</div>
           </div>
           <div>
-            <Table
-              rowKey={(record) => record.id}
-              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
-              dataSource={serviceList}
-              pagination={false}
-              columns={history?.location?.query?.env == 'Dev' ? columnsDev : history?.location?.query?.env == 'Test' ? columnsTest : history?.location?.query?.env == 'Prod' ? columnsProd : columnsDev}
-            />
+            {
+              !isShow && <Table
+                rowKey={(record) => record.id}
+                rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
+                dataSource={serviceList}
+                pagination={false}
+                columns={history?.location?.query?.env == 'Dev' ? columnsDev : history?.location?.query?.env == 'Test' ? columnsTest : history?.location?.query?.env == 'Prod' ? columnsProd : columnsDev}
+              />
+            }
+
           </div>
         </div>
 
@@ -1042,55 +1138,16 @@ const Index: React.FC = () => {
                     okText="是"
                     cancelText="否"
                   >
-                    <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={applyIsDone || isDone} >{(applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+                    <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={isDepolyDone || applyIsDone || isDone} >{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
                   </Popconfirm>
                 }
                 {
-                  history?.location?.query?.env != 'Prod' && <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={applyIsDone || isDone} onClick={() => {
+                  history?.location?.query?.env != 'Prod' && <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={isDepolyDone || applyIsDone || isDone} onClick={() => {
                     refresh()
-                  }}>{(applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+                  }}>{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
                 }
-                {
-                  history?.location?.query?.env == 'Prod' && <Popconfirm
-                    onConfirm={async () => {
-                      depoly()
-                    }}
-                    key="popconfirm"
-                    title="当前环境为生产环境,是否继续?"
-                    okText="是"
-                    cancelText="否"
-                  >
-                    <Button type="primary" loading={isDepolyDone} >{(isDepolyDone) ? 'waiting...' : 'Web Depoly'}</Button>
-                  </Popconfirm>
-                }
-                {
-                  history?.location?.query?.env != 'Prod' && <Button type="primary" loading={isDepolyDone} onClick={() => {
-                    depoly()
-                  }}>{(isDepolyDone) ? 'waiting...' : 'Web Depoly'}</Button>
-                }
+                <div className='apply-branch'>{branch}</div>
               </Space>
-              <ProForm form={formObj} submitter={false}>
-                <ProFormSelect
-                  allowClear={false}
-                  label=""
-                  name="version"
-                  width="sm"
-                  request={() => getVersionSelectList()}
-                  placeholder="请选择版本号"
-                  fieldProps={{
-                    onChange: (e) => {
-                      // setUserType(e)
-                      console.log(e)
-                      setBranch(e.value)
-                      getServiceList(e.value)
-                      formObj.setFieldsValue({
-                        version: e.value
-                      })
-                    },
-                    labelInValue: true
-                  }}
-                />
-              </ProForm>
             </div>
             <div className='opration-refresh-step'>
               <div style={{ color: serviceStep == 1 ? '#11BBAA' : '' }}>Start</div>
@@ -1130,13 +1187,13 @@ const Index: React.FC = () => {
                   okText="是"
                   cancelText="否"
                 >
-                  <Button type="primary" loading={applyIsDone || isDone} >{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+                  <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} >{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
                 </Popconfirm>
               }
               {
-                history?.location?.query?.env != 'Prod' && <Button type="primary" loading={applyIsDone || isDone} onClick={() => {
+                history?.location?.query?.env != 'Prod' && <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} onClick={() => {
                   isShowModal(true)
-                }}>{(applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+                }}>{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
               }
 
               <div className='apply-branch'>{branch}</div>
@@ -1179,8 +1236,7 @@ const Index: React.FC = () => {
 
           </div>
           <div className='opration-apply-content'>
-
-            <div className='apply-log-box'>
+            <div className='apply-log-box' style={{ height: '110px' }}>
               {
                 infoDetail.stsd != null && <>
                   <div>上次执行结果:</div>
@@ -1196,6 +1252,75 @@ const Index: React.FC = () => {
             <div className='apply-line-box'>
               {
                 <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: applyBotText }}></div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div className='service-list'>
+          <div className='tables-titles'>
+            <div className='tables-titles-arrow'>Webdist</div>
+          </div>
+          <div>
+            <Table
+              rowKey={(record) => record.id}
+              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
+              dataSource={depolyList}
+              pagination={false}
+              columns={columnsDepoly}
+            />
+          </div>
+        </div>
+        <div className='opration-depoly'>
+
+          <div className='opration-depoly-title' style={{ marginTop: '16px' }}>
+            <div className='opration-depoly-title-left'>
+              {
+                history?.location?.query?.env == 'Prod' && <Popconfirm
+                  onConfirm={async () => {
+                    depoly()
+                  }}
+                  key="popconfirm"
+                  title="当前环境为生产环境,是否继续?"
+                  okText="是"
+                  cancelText="否"
+                >
+                  <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} >{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Web Depoly'}</Button>
+                </Popconfirm>
+              }
+              {
+                history?.location?.query?.env != 'Prod' && <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} onClick={() => {
+                  depoly()
+                }}>{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Web Depoly'}</Button>
+              }
+              <div className='depoly-branch'>{branch}</div>
+            </div>
+            {/* {
+              history?.location?.query?.env == 'Dev' ? <div className='opration-depoly-step'>
+                <div style={{ color: depolyStep == 1 ? '#11BBAA' : '' }}>Start</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: depolyStep == 2 ? '#11BBAA' : '' }}>SyncWebdist</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: depolyStep == 3 ? '#11BBAA' : '' }}>DealEnvFile</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: depolyStep == 5 ? '#11BBAA' : '' }}>End</div>
+              </div> : <div className='opration-apply-step'>
+                <div style={{ color: depolyStep == 1 ? '#11BBAA' : '' }}>Start</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: depolyStep == 2 ? '#11BBAA' : '' }}>SyncWebdist</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: depolyStep == 3 ? '#11BBAA' : '' }}>MergeWebdist</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: depolyStep == 4 ? '#11BBAA' : '' }}>EtcdUpgrade</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: depolyStep == 5 ? '#11BBAA' : '' }}>End</div>
+              </div>
+            } */}
+          </div>
+          <div className='opration-depoly-content'>
+            <div className='depoly-line-box'>
+              {
+                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: depolyBotText }}></div>
               }
             </div>
           </div>

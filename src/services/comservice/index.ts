@@ -30,3 +30,10 @@ export async function getFinishedLastugpAPI(options: any) {
     params: options,
   });
 }
+/** 获取depoly 执行结果 GET /devopsCore/lastugp */
+export async function getDepolyFinishedLastugpAPI(options: any) {
+  return request('/devopsCore/webdistlist', {
+    method: 'GET',
+    params: options,
+  });
+}

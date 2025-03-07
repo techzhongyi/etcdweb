@@ -78,10 +78,10 @@ const Index: React.FC = () => {
   const [isEtcdScroll, setIsEtcdScroll] = useState(false)
   const [serviceStep, setServiceStep] = useState(-1)
   const [applyStep, setApplyStep] = useState(-1)
-  const [depolyStep, setDepolyStep] = useState(-1)
+  // const [depolyStep, setDepolyStep] = useState(-1)
   const [refreshTopText, setRefreshTopText] = useState('')
   const [refreshBotText, setRefreshBotText] = useState('')
-  const [applyBotText, setApplyBotText] = useState('')
+  // const [applyBotText, setApplyBotText] = useState('')
   const [depolyBotText, setDepolyBotText] = useState('')
   const [visible, setVisible] = useState<boolean>(false);
   const [visible1, setVisible1] = useState<boolean>(false);
@@ -110,12 +110,7 @@ const Index: React.FC = () => {
     info: '',
     error: ''
   });
-  const [infoDepolyDetail, setInfoDepolyDetail] = useState<any>({
-    stsd: null,
-    success: '',
-    info: '',
-    error: ''
-  });
+  // useEffect()
   // apply Modal
   const isShowModal = (show: boolean) => {
     if (!webShhApply) {
@@ -266,10 +261,7 @@ const Index: React.FC = () => {
     const data = {
       env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
-      // branch: formObj.getFieldValue('version'),
     }
-    // debugger
-    // 必须设置格式为arraybuffer，zmodem 才可以使用
     webShhDepoly = await webSocket('/devopsCore/deploywebdist', data);
     webShhDepoly.onopen = (res: any) => {
       longDepolystart()
@@ -357,7 +349,7 @@ const Index: React.FC = () => {
         }
         setApplyIsDone(!(_data.IsDone))
         if (_data.Msg != '') {
-          setApplyBotText(_data.Msg)
+          setRefreshBotText(_data.Msg)
         }
         if (_data.NeedSqlConfirm) {
           isShowModal7(true)
@@ -481,7 +473,7 @@ const Index: React.FC = () => {
       return
     }
     setDepolyBotText('')
-    setDepolyStep(1)
+    // setDepolyStep(1)
     setWebShhDepoly()
     setIsDepolyDone(true)
     webShhDepoly.send('Deploy??' + formObj.getFieldValue('version'))
@@ -490,7 +482,8 @@ const Index: React.FC = () => {
   const onFinish = async (value) => {
     setApplyStep(1)
     setApplyIsDone(true)
-    setApplyBotText('')
+    // setApplyBotText('')
+    setRefreshBotText('')
     isShowModal(false)
     webShhApply.send('apply??' + value.desc)
   }
@@ -585,9 +578,9 @@ const Index: React.FC = () => {
   // 获取depoly执行结果
   const getDepolyResult = async (branch) => {
     const params = {
-      // env: history?.location?.query?.env,
+      env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
-      // branch,
+      branch
     }
     const { data: { items } } = await getDepolyFinishedLastugpAPI(params)
     setDepolyList(items)
@@ -711,6 +704,9 @@ const Index: React.FC = () => {
       div.scrollTop = div.scrollHeight
     }
   }, [etcdCodeLog])
+  useEffect(() => {
+
+  }, [])
   const columnsDepoly = [
     {
       title: '项目名称',
@@ -724,6 +720,12 @@ const Index: React.FC = () => {
       dataIndex: 'gitRepo',
       align: 'center',
       key: 'gitRepo',
+    },
+    {
+      title: '发布时间',
+      dataIndex: 'deployTime',
+      align: 'center',
+      key: 'deployTime',
     },
     {
       title: '部署地址',
@@ -1018,6 +1020,7 @@ const Index: React.FC = () => {
         formObj.setFieldsValue({
           version: items[0]
         })
+        setBranch(items[0])
       }
       items?.map((item: any) => {
         array.push({ label: item, value: item });
@@ -1074,7 +1077,6 @@ const Index: React.FC = () => {
             >
               <LogoutOutlined style={{ fontSize: '22px' }} />
             </Popconfirm>
-
           </div>
         </div>
       </div>
@@ -1109,6 +1111,40 @@ const Index: React.FC = () => {
         <div className='service-list'>
           <div className='tables-titles'>
             <div className='tables-titles-arrow' onClick={() => { getShow() }}>Service{!isShow ? <DownOutlined /> : <RightOutlined />}</div>
+            <div className='opration-refresh-title'>
+
+              <div className='opration-refresh-step'>
+                <div style={{ color: serviceStep == 1 ? '#11BBAA' : '' }}>Start</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: serviceStep == 2 ? '#11BBAA' : '' }}>Repo Sync</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: serviceStep == 3 ? '#11BBAA' : '' }}>Project Scan</div>
+                <div><img src={long_arrow} alt="" /></div>
+                <div style={{ color: serviceStep == 5 ? '#11BBAA' : '' }}>End</div>
+              </div>
+              <div className="title-left">
+                <Space>
+                  {
+                    history?.location?.query?.env == 'Prod' && <Popconfirm
+                      onConfirm={async () => {
+                        refresh()
+                      }}
+                      key="popconfirm"
+                      title="当前环境为生产环境,是否继续?"
+                      okText="是"
+                      cancelText="否"
+                    >
+                      <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={isDepolyDone || applyIsDone || isDone} >{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+                    </Popconfirm>
+                  }
+                  {
+                    history?.location?.query?.env != 'Prod' && <Button type="primary" disabled={!formObj.getFieldValue('version')} loading={isDepolyDone || applyIsDone || isDone} onClick={() => {
+                      refresh()
+                    }}>{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Refresh'}</Button>
+                  }
+                </Space>
+              </div>
+            </div>
           </div>
           <div>
             {
@@ -1125,7 +1161,7 @@ const Index: React.FC = () => {
         </div>
 
         <div className='opration-refresh'>
-          <div className='opration-refresh-title'>
+          {/* <div className='opration-refresh-title'>
             <div className="title-left">
               <Space>
                 {
@@ -1155,49 +1191,12 @@ const Index: React.FC = () => {
               <div style={{ color: serviceStep == 2 ? '#11BBAA' : '' }}>Repo Sync</div>
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: serviceStep == 3 ? '#11BBAA' : '' }}>Project Scan</div>
-              {/* <div><img src={long_arrow} alt="" /></div> */}
-              {/* <div style={{ color: serviceStep == 4 ? '#11BBAA' : '' }}>Web Depoly</div> */}
               <div><img src={long_arrow} alt="" /></div>
               <div style={{ color: serviceStep == 5 ? '#11BBAA' : '' }}>End</div>
             </div>
-          </div>
-          <div className='opration-refresh-content'>
-            <div className='refresh-log-box'>
-              {
-                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: refreshTopText }}></div>
-              }
-            </div>
-            <div className='refresh-line-box'>
-              {
-                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: refreshBotText }}></div>
-              }
-            </div>
-          </div>
-        </div>
-        <div className='opration-apply'>
+          </div> */}
           <div className='opration-apply-title'>
-            <div className='opration-apply-title-left'>
-              {
-                history?.location?.query?.env == 'Prod' && <Popconfirm
-                  onConfirm={async () => {
-                    isShowModal(true)
-                  }}
-                  key="popconfirm"
-                  title="当前环境为生产环境,是否继续?"
-                  okText="是"
-                  cancelText="否"
-                >
-                  <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} >{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
-                </Popconfirm>
-              }
-              {
-                history?.location?.query?.env != 'Prod' && <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} onClick={() => {
-                  isShowModal(true)
-                }}>{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
-              }
 
-              <div className='apply-branch'>{branch}</div>
-            </div>
             {
               history?.location?.query?.env == 'Dev' ? <div className='opration-apply-step'>
                 <div style={{ color: applyStep == 1 ? '#11BBAA' : '' }}>Start</div>
@@ -1233,10 +1232,54 @@ const Index: React.FC = () => {
                 <div style={{ color: applyStep == 5 ? '#11BBAA' : '' }}>End</div>
               </div> : ''
             }
-
+            <div className='opration-apply-title-left'>
+              {
+                history?.location?.query?.env == 'Prod' && <Popconfirm
+                  onConfirm={async () => {
+                    isShowModal(true)
+                  }}
+                  key="popconfirm"
+                  title="当前环境为生产环境,是否继续?"
+                  okText="是"
+                  cancelText="否"
+                >
+                  <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} >{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+                </Popconfirm>
+              }
+              {
+                history?.location?.query?.env != 'Prod' && <Button type="primary" loading={isDepolyDone || applyIsDone || isDone} onClick={() => {
+                  isShowModal(true)
+                }}>{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Apply'}</Button>
+              }
+            </div>
           </div>
-          <div className='opration-apply-content'>
-            <div className='apply-log-box' style={{ height: '110px' }}>
+          <div className='opration-refresh-content'>
+            <div className='refresh-log-box'>
+              {
+                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', height: '200px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: refreshTopText }}></div>
+              }
+            </div>
+            <div className='refresh-line-box'>
+              {
+                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: refreshBotText }}></div>
+              }
+            </div>
+          </div>
+        </div>
+        <div className='opration-apply'>
+          <div className='opration-apply-content' style={{color:infoDetail.success == 'yes'?'#11BBAA':'red'}}>
+            {
+              infoDetail.stsd != null && <>
+                <div>上次执行结果:</div>
+                <div>时间: {moment(infoDetail.stsd * 1000).format('YYYY-MM-DD HH:mm:ss')}</div>
+                <div>标题: {infoDetail.info}</div>
+                <div>执行结果: {infoDetail.success == 'yes' ? '成功' : '失败'}</div>
+                {
+                  infoDetail.success != 'yes' && <div>失败原因: {infoDetail.error}</div>
+                }
+              </>
+            }
+            {/* <div className='apply-log-box' >
               {
                 infoDetail.stsd != null && <>
                   <div>上次执行结果:</div>
@@ -1248,32 +1291,18 @@ const Index: React.FC = () => {
                   }
                 </>
               }
-            </div>
-            <div className='apply-line-box'>
+            </div> */}
+            {/* <div className='apply-line-box'>
               {
                 <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: applyBotText }}></div>
               }
-            </div>
+            </div> */}
           </div>
         </div>
 
         <div className='service-list'>
           <div className='tables-titles'>
             <div className='tables-titles-arrow'>Webdist</div>
-          </div>
-          <div>
-            <Table
-              rowKey={(record) => record.id}
-              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
-              dataSource={depolyList}
-              pagination={false}
-              columns={columnsDepoly}
-            />
-          </div>
-        </div>
-        <div className='opration-depoly'>
-
-          <div className='opration-depoly-title' style={{ marginTop: '16px' }}>
             <div className='opration-depoly-title-left'>
               {
                 history?.location?.query?.env == 'Prod' && <Popconfirm
@@ -1293,9 +1322,23 @@ const Index: React.FC = () => {
                   depoly()
                 }}>{(isDepolyDone || applyIsDone || isDone) ? 'waiting...' : 'Web Depoly'}</Button>
               }
-              <div className='depoly-branch'>{branch}</div>
             </div>
-            {/* {
+          </div>
+          <div>
+            <Table
+              rowKey={(record) => record.id}
+              rowClassName={(_, index) => (index % 2 == 1 ? 'rowBgColor' : '')}
+              dataSource={depolyList}
+              pagination={false}
+              columns={columnsDepoly}
+            />
+          </div>
+        </div>
+        <div className='opration-depoly'>
+
+          {/* <div className='opration-depoly-title' style={{ marginTop: '16px' }}> */}
+
+          {/* {
               history?.location?.query?.env == 'Dev' ? <div className='opration-depoly-step'>
                 <div style={{ color: depolyStep == 1 ? '#11BBAA' : '' }}>Start</div>
                 <div><img src={long_arrow} alt="" /></div>
@@ -1316,14 +1359,16 @@ const Index: React.FC = () => {
                 <div style={{ color: depolyStep == 5 ? '#11BBAA' : '' }}>End</div>
               </div>
             } */}
-          </div>
-          <div className='opration-depoly-content'>
-            <div className='depoly-line-box'>
-              {
-                <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: depolyBotText }}></div>
-              }
+          {/* </div> */}
+          {
+            depolyBotText && <div className='opration-depoly-content'>
+              <div className='depoly-line-box'>
+                {
+                  <div id='refresh-content' style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: depolyBotText }}></div>
+                }
+              </div>
             </div>
-          </div>
+          }
         </div>
         {/* <div className='log-content'>
           <div className='log-titles'>

@@ -84,6 +84,7 @@
     name: '服务日志',
     icon: 'FundProjectionScreenOutlined',
     hideInMenu: true,
+    layout: false,
     component: './log',
   },
   {

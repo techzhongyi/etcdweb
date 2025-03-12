@@ -649,6 +649,19 @@ const Index: React.FC = () => {
       setEtcdCodeLog('')
     }
   }
+  // 日志详情
+  const toLogDetail = ({sname}) => {
+    console.log(sname)
+    history.push({
+      pathname: '/log',
+      query: {
+        branch,
+        env: history?.location?.query?.env,
+        organize: history?.location?.query?.organize,
+        sname
+      },
+    })
+  }
 
   const isScrollAtBottom = (container) => {
     if (!container) {
@@ -787,7 +800,7 @@ const Index: React.FC = () => {
       width: 180,
       render: (_, row: any) => (
         <Space>
-          <a onClick={() => { isShowModal2(true, row) }}>log</a>
+          <a onClick={() => { toLogDetail(row) }}>log</a>
           {/* <a onClick={() => { isShowModal3(true, row) }}>config</a>
           {
             row.sname == 'httpCore' && <a onClick={() => { isShowModal8(true, row) }}>expuri</a>
@@ -860,7 +873,7 @@ const Index: React.FC = () => {
       width: 180,
       render: (_, row: any) => (
         <Space>
-          <a onClick={() => { isShowModal2(true, row) }}>log</a>
+          <a onClick={() => { toLogDetail(row) }}>log</a>
           {
             history?.location?.query?.env == 'Prod' && <Popconfirm
               onConfirm={async () => {
@@ -928,7 +941,7 @@ const Index: React.FC = () => {
       width: 180,
       render: (_, row: any) => (
         <Space>
-          <a onClick={() => { isShowModal2(true, row) }}>log</a>
+          <a onClick={() => { toLogDetail(row) }}>log</a>
           {
             history?.location?.query?.env == 'Prod' && <Popconfirm
               onConfirm={async () => {
@@ -1267,7 +1280,7 @@ const Index: React.FC = () => {
           </div>
         </div>
         <div className='opration-apply'>
-          <div className='opration-apply-content' style={{color:infoDetail.success == 'yes'?'#11BBAA':'red'}}>
+          <div className='opration-apply-content' style={{ color: infoDetail.success == 'yes' ? '#11BBAA' : 'red' }}>
             {
               infoDetail.stsd != null && <>
                 <div>上次执行结果:</div>

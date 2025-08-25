@@ -16,6 +16,7 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
   const [loadingDown, setLoadingDown] = useState(false); // 向下加载的状态
   const isLoading = useRef(false); // 加载锁，防止同时触发向上和向下加载
   const [dataList, setDataList] = useState([]);
+  const [key,setKey] = useState('')
   // 使用 useImperativeHandle 暴露方法给父组件
   useImperativeHandle(ref, () => ({
     getRightList
@@ -25,13 +26,14 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
     setDataList([])
   }
   // 获取数据
-  const getRightList = async (id, dirc, direction?) => {
+  const getRightList = async (id, key, dirc, direction?) => {
     const params = {
       env: history?.location?.query?.env,
       organize: history?.location?.query?.organize,
       sname,
       id: +id,
       dirc,
+      key
     }
     const { data: { data } } = await getLogsContextListAPI(params)
     if (direction === "up") {
@@ -46,7 +48,7 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
       setLoadingUp(true);
       console.log('----》向上')
       const id = dataList[0][0]
-      await getRightList(id, 'old', 'up')
+      await getRightList(id, key, 'old', 'up')
       setLoadingUp(false);
       isLoading.current = false; // 解锁
       // 保持滚动位置
@@ -61,7 +63,7 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
       setLoadingDown(true);
       console.log('----》向下')
       const id = dataList[dataList.length - 1][0]
-      await getRightList(id, 'new', 'down')
+      await getRightList(id, key, 'new', 'down')
       setLoadingDown(false);
       isLoading.current = false; // 解锁
     }
@@ -101,8 +103,8 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
       }
     };
   }, [loadingUp, loadingDown, dataList]);
-  const handleEvent = (id) => {
-    getRightList(id, 'new')
+  const handleEvent = ({id,key}) => {
+    getRightList(id, key, 'new')
   }
   useEffect(() => {
     eventBus.on('detail', (env) => { handleEvent(env) });
@@ -110,6 +112,29 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
       eventBus.off('detail', handleEvent);
     }
   }, [])
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 判断是否是 Command + K (Mac) 或 Ctrl + K (Windows/Linux)
+      const isCommandOrCtrl = e.metaKey || e.ctrlKey;
+      const isKKey = e.key.toLowerCase() === 'k';
+
+      if (isCommandOrCtrl && isKKey) {
+        e.preventDefault(); // 阻止默认行为（如浏览器搜索）
+        e.stopPropagation(); // 阻止事件冒泡
+        console.log('command+k')
+        clearLog()
+      }
+    };
+
+    // 绑定事件监听
+    document.addEventListener('keydown', handleKeyDown);
+
+    // 组件卸载时移除监听
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   return (
     <div >
       <div style={{ display: isActive ? 'block' : 'none' }}>
@@ -122,7 +147,7 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
           {
             dataList.map(item => {
               return (
-                <div>{item[2]}{item[1]}</div>
+                <div dangerouslySetInnerHTML={{ __html: item[2]+item[1] }}></div>
               )
             })
           }
@@ -132,11 +157,11 @@ const HistoryLogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
             </div>
           )}
         </div>
-        <div className='log-history-clear' onClick={() => {
+        {/* <div className='log-history-clear' onClick={() => {
           clearLog()
         }}>
           <div> clear </div>
-        </div>
+        </div> */}
       </div >
     </div>
   );

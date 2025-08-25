@@ -18,8 +18,8 @@ const Index: React.FC = () => {
   const [record, setRecord] = useState<any | undefined>(undefined);
   const [env, setEnv] = useState(getStorage('env') || 'Dev')
   // 详情Modal
-  const isShowModal = (event,show: boolean, row?: any) => {
-    if(show){
+  const isShowModal = (event, show: boolean, row?: any) => {
+    if (show) {
       event.stopPropagation();
     }
     setVisible(show);
@@ -85,7 +85,9 @@ const Index: React.FC = () => {
           return
         }
         const data_ = JSON.parse(recv.data);
+        console.log(data_)
         setDataList(data_)
+
       } else {
         // zsentry.consume(recv.data);
       }
@@ -113,7 +115,7 @@ const Index: React.FC = () => {
   }, [env])
   // toOpratipn
   const toOpratipn = (organize, branch) => {
-    if(isToolOpen){
+    if (isToolOpen) {
       return
     }
     history.push({
@@ -139,6 +141,31 @@ const Index: React.FC = () => {
   const tollTipOpen = (e) => {
     setIsToolOpen(e)
   }
+  // 日志详情
+  const toLogDetail = ( event,organize) => {
+    event.stopPropagation();
+    history.push({
+      pathname: '/log',
+      query: {
+        branch: '',
+        env,
+        organize,
+        sname: 'etcd-kingqi'
+      },
+    })
+  }
+  // 日志详情
+  const toLog = () => {
+    history.push({
+      pathname: '/log',
+      query: {
+        branch: '',
+        env,
+        organize: 'kingyu',
+        sname: 'kingyu'
+      },
+    })
+  }
   return (
     <div className='page-container'>
       <EtdcHeader />
@@ -149,6 +176,11 @@ const Index: React.FC = () => {
           onChange={(e) => { envChange(e) }}
           options={envArray}
         />
+        {
+          env == 'Dev' && <a style={{ marginLeft: '10px',fontSize: '18px' }} className='content-detail' onClick={() => {
+            toLog()
+          }}>kingyu log</a>
+        }
       </div>
       <div>{dataList.length}</div>
       {
@@ -160,24 +192,32 @@ const Index: React.FC = () => {
                   <div className='list-title'>
                     <div>{item.organize}:{item.name}({item.ip})</div>
                     <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
-                    <a className='content-detail' onClick={(e) => {
-                      isShowModal(e,true,item)
-                    }}>详情</a>
+                    <div>
+                      {
+                        env != 'Dev' && <a style={{ marginRight: '10px' }} className='content-detail' onClick={(e) => {
+                          toLogDetail(e,item.organize)
+                        }}>kingqi log</a>
+                      }
+
+                      <a className='content-detail' onClick={(e) => {
+                        isShowModal(e, true, item)
+                      }}>详情</a>
+                    </div>
                   </div>
                   <div className={['list-content',
                     item.health.status == 'lost'
                       ? 'list-content-gray'
                       : item.health.status == 'fault'
                         ? 'list-content-red'
-                        :item.health.status == 'good'
-                        ?'list-content-green': 'list-content-yellow',
+                        : item.health.status == 'good'
+                          ? 'list-content-green' : 'list-content-yellow',
                   ].join(' ')}>
                     <div className='list-item-wrap'>
                       {
                         item.services.map(item_ => {
                           return (
                             <div className='list-item'>
-                              <Tooltip onOpenChange={(e) => {tollTipOpen(e)}} overlayInnerStyle={{width: '600px'}} placement="top" title={getTitle(item_)}>
+                              <Tooltip onOpenChange={(e) => { tollTipOpen(e) }} overlayInnerStyle={{ width: '600px' }} placement="top" title={getTitle(item_)}>
                                 <div className='list-item-icon'><img src={item_.status == 'good' ? green_cloud : item_.status == 'lost' ? gray_cloud : item_.status == 'init' ? yellow_cloud : red_cloud} alt="" /></div>
                               </Tooltip>
                               <div className='list-item-text'>

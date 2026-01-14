@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef,useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import './index.less'
 import { history } from 'umi';
 import { detectOS } from '@/utils/common';
@@ -7,7 +7,7 @@ import moment from 'moment';
 let webShh: any = null,
   timeoutObj: any = undefined,
   serverTimeoutObj: any = undefined;
-const LogDetailModal: React.FC<any> = forwardRef((props: any,ref) => {
+const LogDetailModal: React.FC<any> = forwardRef((props: any, ref) => {
   const [messages, setMessages] = useState([]);
   const ws = useRef(null);
   const containerRef = useRef(null);
@@ -15,19 +15,12 @@ const LogDetailModal: React.FC<any> = forwardRef((props: any,ref) => {
   const { serviceName, isActive } = props;
 
   const search = (value) => {
+    console.log('Child method called', value);
     const arr = []
-    if(value.key1){
-      arr.push(value.key1)
+    if (value) {
+      arr.push(value)
     }
-    if(value.key2){
-      arr.push(value.key2)
-    }
-    if(value.key3){
-      arr.push(value.key3)
-    }
-
-    ws.current.send('FILTER??'+ JSON.stringify(arr))
-    console.log('Child method called',value);
+    ws.current.send('FILTER??' + JSON.stringify(arr))
   };
 
   // 使用 useImperativeHandle 暴露方法给父组件
@@ -143,7 +136,28 @@ const LogDetailModal: React.FC<any> = forwardRef((props: any,ref) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 判断是否是 Command + K (Mac) 或 Ctrl + K (Windows/Linux)
+      const isCommandOrCtrl = e.metaKey || e.ctrlKey;
+      const isKKey = e.key.toLowerCase() === 'k';
 
+      if (isCommandOrCtrl && isKKey) {
+        e.preventDefault(); // 阻止默认行为（如浏览器搜索）
+        e.stopPropagation(); // 阻止事件冒泡
+        console.log('command+k')
+        clearLog()
+      }
+    };
+
+    // 绑定事件监听
+    document.addEventListener('keydown', handleKeyDown);
+
+    // 组件卸载时移除监听
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
   return (
     <>
       <div style={{ display: isActive ? 'block' : 'none' }}>
@@ -153,16 +167,17 @@ const LogDetailModal: React.FC<any> = forwardRef((props: any,ref) => {
               return (
                 <>
                   <div style={{ fontFamily: detectOS() == 'Mac' ? 'monospace' : 'cursive' }} dangerouslySetInnerHTML={{ __html: item }}></div>
-                  <div className='log-clear' onClick={() => {
-                    clearLog()
-                  }}>
-                    <div> clear </div>
-                  </div>
+
                 </>
               )
             })
           }
         </div>
+        {/* <div className='logDetail-clear' onClick={() => {
+          clearLog()
+        }}>
+          <div> clear </div>
+        </div> */}
       </div >
     </>
   );

@@ -127,12 +127,13 @@ const Index: React.FC = () => {
     }
   }, [history?.location?.query?.sname])
   // 实时日志查询
-  const onFinishReal = (value) => {
+  const onFinishReal = (e) => {
+    console.log('点查询', e)
+    console.log('回车value按下', e.target.value)
     if (childRef.current) {
-      childRef.current.search(value); // 调用子组件的方法
+      childRef.current.search(e.target.value); // 调用子组件的方法
     }
   }
-
   return (
     <div className='page-container'>
       <div className='page-header'>
@@ -232,19 +233,7 @@ const Index: React.FC = () => {
               activeRadioKey == 1 && <div className='real-time-log'>
                 <ProForm
                   submitter={{
-                    render: (props_) => (
-                      <div style={{ textAlign: 'right' }}>
-                        <Space>
-                          <Button
-                            type="primary"
-                            key="submit"
-                            onClick={() => props_.form?.submit?.()}
-                          >
-                            查询
-                          </Button>
-                        </Space>
-                      </div>
-                    ),
+                    render: (props_) => [],
                   }}
                   onFinish={onFinishReal}
                   form={formObj}
@@ -252,29 +241,12 @@ const Index: React.FC = () => {
                   <ProFormText
                     width="md"
                     name="key1"
-                    label="关键词1"
+                    label="关键词"
                     fieldProps={{
-                      maxLength: 29,
+                      maxLength: 100,
+                      onPressEnter: onFinishReal,
                     }}
-                    placeholder="请输入关键词"
-                  />
-                  <ProFormText
-                    width="md"
-                    name="key2"
-                    label="关键词2"
-                    fieldProps={{
-                      maxLength: 29,
-                    }}
-                    placeholder="请输入关键词"
-                  />
-                  <ProFormText
-                    width="md"
-                    name="key3"
-                    label="关键词3"
-                    fieldProps={{
-                      maxLength: 29,
-                    }}
-                    placeholder="请输入关键词"
+                    placeholder="请输入关键词,多个关键词用,隔开"
                   />
                 </ProForm>
               </div>

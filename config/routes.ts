@@ -88,6 +88,14 @@
     component: './log',
   },
   {
+    path: '/loki-viewer',
+    name: 'Loki 日志查看器',
+    icon: 'FundProjectionScreenOutlined',
+    hideInMenu: true,
+    layout: false,
+    component: './loki-viewer',
+  },
+  {
     path: '/',
     redirect: '/home',
   },

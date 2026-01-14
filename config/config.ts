@@ -2,7 +2,7 @@ import { defineConfig } from 'umi';
 // import { join } from 'path';
 
 import defaultSettings from './defaultSettings';
-// import proxy from './proxy';
+import proxy from './proxy';
 import routes from './routes';
 
 // const { REACT_APP_ENV } = process.env;
@@ -33,6 +33,7 @@ export default defineConfig({
     ie: 11,
   },
   routes,
+  proxy: proxy.dev,
   theme: {
     'primary-color': defaultSettings.primaryColor,
   },
@@ -40,7 +41,7 @@ export default defineConfig({
   title: false,
   ignoreMomentLocale: true,
   manifest: {
-    basePath: '/',
+    basePath: './',
   },
   // Fast Refresh 热更新
   fastRefresh: {},

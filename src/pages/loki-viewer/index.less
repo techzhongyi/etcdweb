@@ -1,0 +1,380 @@
+.container {
+  padding: 24px;
+  min-height: 100vh;
+  background: #111827; // gray-900
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  
+  h2 {
+    color: #ffffff;
+    margin: 0;
+  }
+}
+
+.version {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(250, 195, 90, 0.1);
+  color: #fac35a;
+  border-radius: 12px;
+}
+
+.filterCard,
+.logsCard {
+  margin-bottom: 24px;
+  background: rgba(31, 41, 55, 0.5) !important; // gray-800/50
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(55, 65, 81, 0.6) !important; // gray-700/60
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  color: #ffffff;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #d1d5db; // gray-300
+  font-size: 14px;
+}
+
+.labelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  
+  .label {
+    margin-bottom: 0;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(55, 65, 81, 0.6); // gray-700/60
+}
+
+.scrollToTop {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  background-color: #fbbf24 !important; // yellow-400
+  border-color: #fbbf24 !important;
+  
+  &:hover {
+    background-color: #f59e0b !important; // yellow-500
+    border-color: #f59e0b !important;
+    transform: scale(1.05);
+  }
+}
+
+// 输入框样式
+:global {
+  .ant-input,
+  .ant-input-number,
+  textarea.ant-input {
+    background-color: #111827 !important; // gray-900
+    border-color: #4b5563 !important; // gray-600
+    color: #ffffff !important;
+    
+    &::placeholder {
+      color: #6b7280 !important; // gray-500
+    }
+    
+    &:hover {
+      border-color: #6b7280 !important;
+    }
+    
+    &:focus {
+      border-color: #9ca3af !important;
+      box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2) !important;
+    }
+  }
+  
+  // Select 下拉框
+  .ant-select-dropdown {
+    background-color: #111827 !important;
+    border-color: #4b5563 !important;
+    z-index: 1050 !important;
+    
+    .ant-select-item {
+      color: #ffffff !important;
+      
+      &:hover {
+        background-color: #1f2937 !important;
+      }
+      
+      &-selected {
+        background-color: #374151 !important;
+        color: #ffffff !important;
+      }
+      
+      &-option-active {
+        background-color: #1f2937 !important;
+      }
+    }
+  }
+  
+  // Select 选中值显示
+  .ant-select {
+    .ant-select-selector {
+      .ant-select-selection-item {
+        color: #ffffff !important;
+        line-height: 32px !important;
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      
+      .ant-select-selection-placeholder {
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+    }
+    
+    &.ant-select-single {
+      .ant-select-selector {
+        .ant-select-selection-item {
+          color: #ffffff !important;
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        
+        .ant-select-selection-placeholder {
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+      }
+    }
+    
+    &.ant-select-sm {
+      .ant-select-selector {
+        .ant-select-selection-item {
+          line-height: 24px !important;
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        
+        .ant-select-selection-placeholder {
+          text-align: center !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+      }
+    }
+  }
+  
+  // 表格样式
+  .ant-table {
+    background-color: rgba(31, 41, 55, 0.5) !important;
+    
+    .ant-table-thead > tr > th {
+      background-color: rgba(55, 65, 81, 0.5) !important;
+      color: #9ca3af !important;
+    }
+    
+    .ant-table-tbody > tr {
+      &:hover > td {
+        background-color: rgba(55, 65, 81, 0.3) !important;
+      }
+      
+      > td {
+        color: #ffffff !important;
+      }
+    }
+  }
+  
+  // Label 过滤器容器
+  .label-filter-container {
+    background: rgba(17, 24, 39, 0.4) !important; // gray-900/40
+    border: 1px solid rgba(55, 65, 81, 0.6) !important;
+    border-radius: 8px;
+    padding: 8px;
+    position: relative;
+  }
+  
+  // 错误提示
+  .error-text {
+    color: #fca5a5 !important; // red-300
+    font-size: 12px;
+    margin-top: 4px;
+    padding: 8px;
+    background-color: rgba(127, 29, 29, 0.2) !important;
+    border-radius: 4px;
+  }
+  
+  // Checkbox 圆形黄色样式
+  .ant-checkbox {
+    .ant-checkbox-inner {
+      border-radius: 50% !important;
+      border-color: #fbbf24 !important; // yellow-400
+      
+      &:after {
+        border-color: #111827 !important; // gray-900
+      }
+    }
+    
+    &.ant-checkbox-checked {
+      .ant-checkbox-inner {
+        background-color: #fbbf24 !important; // yellow-400
+        border-color: #fbbf24 !important;
+      }
+    }
+    
+    &:hover .ant-checkbox-inner {
+      border-color: #f59e0b !important; // yellow-500
+    }
+    
+    &.ant-checkbox-checked:hover .ant-checkbox-inner {
+      background-color: #f59e0b !important; // yellow-500
+      border-color: #f59e0b !important;
+    }
+  }
+  
+  // 日期选择框样式（与 LogQL 查询框边框颜色一致）
+  .date-range-select {
+    .ant-select-selector {
+      border-color: #4b5563 !important; // gray-600，与 LogQL 查询框一致
+      
+      &:hover {
+        border-color: #6b7280 !important; // gray-500，与 LogQL 查询框一致
+      }
+    }
+    
+    &.ant-select-focused .ant-select-selector {
+      border-color: #9ca3af !important; // gray-400，与 LogQL 查询框一致
+      box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2) !important;
+    }
+  }
+  
+  .date-input {
+    border-color: #4b5563 !important; // gray-600，与 LogQL 查询框一致
+    
+    &:hover {
+      border-color: #6b7280 !important; // gray-500，与 LogQL 查询框一致
+    }
+    
+    &:focus {
+      border-color: #9ca3af !important; // gray-400，与 LogQL 查询框一致
+      box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2) !important;
+    }
+    
+    // 修改日期图标颜色为黄色
+    &::-webkit-calendar-picker-indicator {
+      filter: invert(74%) sepia(89%) saturate(1352%) hue-rotate(358deg) brightness(103%) contrast(96%);
+      cursor: pointer;
+    }
+    
+    // Firefox 浏览器的日期图标
+    &::-moz-calendar-picker-indicator {
+      filter: invert(74%) sepia(89%) saturate(1352%) hue-rotate(358deg) brightness(103%) contrast(96%);
+      cursor: pointer;
+    }
+  }
+  
+  // 分页器样式（黄色字体和箭头）
+  .ant-pagination {
+    color: #fbbf24 !important; // yellow-400
+    
+    .ant-pagination-item {
+      a {
+        color: #fbbf24 !important;
+      }
+      
+      &.ant-pagination-item-active {
+        border-color: #fbbf24 !important;
+        
+        a {
+          color: #111827 !important; // gray-900，背景色
+        }
+      }
+      
+      &:hover {
+        border-color: #f59e0b !important; // yellow-500
+        
+        a {
+          color: #f59e0b !important;
+        }
+      }
+    }
+    
+    .ant-pagination-prev,
+    .ant-pagination-next {
+      .ant-pagination-item-link {
+        color: #fbbf24 !important;
+        border-color: #4b5563 !important; // gray-600
+        
+        &:hover {
+          border-color: #f59e0b !important;
+          color: #f59e0b !important;
+        }
+      }
+      
+      &.ant-pagination-disabled {
+        .ant-pagination-item-link {
+          color: #6b7280 !important; // gray-500
+          border-color: #4b5563 !important;
+        }
+      }
+    }
+    
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      .ant-pagination-item-link-icon {
+        color: #fbbf24 !important;
+      }
+      
+      .ant-pagination-item-container {
+        .ant-pagination-item-link-icon {
+          color: #fbbf24 !important;
+        }
+      }
+    }
+    
+    .ant-pagination-options {
+      .ant-pagination-options-size-changer {
+        .ant-select-selector {
+          color: #fbbf24 !important;
+        }
+      }
+      
+      .ant-pagination-options-quick-jumper {
+        input {
+          color: #fbbf24 !important;
+        }
+      }
+    }
+    
+    .ant-pagination-total-text {
+      color: #fbbf24 !important;
+    }
+  }
+}

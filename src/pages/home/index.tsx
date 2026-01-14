@@ -160,9 +160,15 @@ const Index: React.FC = () => {
                   <div className='list-title'>
                     <div>{item.organize}:{item.name}({item.ip})</div>
                     <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
-                    <a className='content-detail' onClick={(e) => {
-                      isShowModal(e,true,item)
-                    }}>详情</a>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <a className='content-detail' onClick={(e) => {
+                        e.stopPropagation();
+                        history.push('/loki-viewer');
+                      }}>日志查看</a>
+                      <a className='content-detail' onClick={(e) => {
+                        isShowModal(e,true,item)
+                      }}>详情</a>
+                    </div>
                   </div>
                   <div className={['list-content',
                     item.health.status == 'lost'

@@ -295,7 +295,20 @@ const LokiViewer: React.FC = () => {
     setLabelFilters([{ id: Date.now().toString(), label: '', value: '', values: [], loading: false }]);
 
     try {
-      const response = await getLabels(url);
+      // 计算时间范围：默认查询最近7天的标签
+      const now = moment();
+      const startDate = now.clone().subtract(7, 'days');
+      const startNano = startDate.valueOf() * 1000000; // 转换为纳秒时间戳
+      const endNano = now.valueOf() * 1000000; // 转换为纳秒时间戳
+      
+      console.log('查询 labels 时间范围:', {
+        start: startDate.format('YYYY-MM-DD HH:mm:ss'),
+        end: now.format('YYYY-MM-DD HH:mm:ss'),
+        startNano,
+        endNano,
+      });
+      
+      const response = await getLabels(url, startNano, endNano);
       console.log('Loki labels 响应:', response);
 
       // 兼容不同的响应格式
@@ -334,7 +347,20 @@ const LokiViewer: React.FC = () => {
     );
 
     try {
-      const response = await getLabelValues(url, label);
+      // 计算时间范围：默认查询最近7天的标签值
+      const now = moment();
+      const startDate = now.clone().subtract(7, 'days');
+      const startNano = startDate.valueOf() * 1000000; // 转换为纳秒时间戳
+      const endNano = now.valueOf() * 1000000; // 转换为纳秒时间戳
+      
+      console.log(`查询 label "${label}" 的值，时间范围:`, {
+        start: startDate.format('YYYY-MM-DD HH:mm:ss'),
+        end: now.format('YYYY-MM-DD HH:mm:ss'),
+        startNano,
+        endNano,
+      });
+      
+      const response = await getLabelValues(url, label, startNano, endNano);
       console.log('Loki label values 响应:', response);
 
       // 兼容不同的响应格式

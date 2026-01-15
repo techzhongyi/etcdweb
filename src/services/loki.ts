@@ -60,11 +60,26 @@ export async function queryRange(params: QueryRangeParams): Promise<QueryRangeRe
 /**
  * 获取所有 labels
  * 通过后端代理 API 调用，避免 CORS 问题
+ * @param lokiUrl Loki 服务器地址
+ * @param start 开始时间（纳秒时间戳，可选）
+ * @param end 结束时间（纳秒时间戳，可选）
  */
-export async function getLabels(lokiUrl: string): Promise<LabelsResponse> {
+export async function getLabels(
+  lokiUrl: string,
+  start?: number,
+  end?: number,
+): Promise<LabelsResponse> {
   const searchParams = new URLSearchParams({
     url: lokiUrl,
   });
+  
+  // 添加时间范围参数（如果提供）
+  if (start !== undefined) {
+    searchParams.append('start', start.toString());
+  }
+  if (end !== undefined) {
+    searchParams.append('end', end.toString());
+  }
   
   return lokiRequest(`/api/loki/labels?${searchParams.toString()}`);
 }
@@ -72,14 +87,28 @@ export async function getLabels(lokiUrl: string): Promise<LabelsResponse> {
 /**
  * 获取特定 label 的所有值
  * 通过后端代理 API 调用，避免 CORS 问题
+ * @param lokiUrl Loki 服务器地址
+ * @param labelName 标签名称
+ * @param start 开始时间（纳秒时间戳，可选）
+ * @param end 结束时间（纳秒时间戳，可选）
  */
 export async function getLabelValues(
   lokiUrl: string,
   labelName: string,
+  start?: number,
+  end?: number,
 ): Promise<LabelValuesResponse> {
   const searchParams = new URLSearchParams({
     url: lokiUrl,
   });
+  
+  // 添加时间范围参数（如果提供）
+  if (start !== undefined) {
+    searchParams.append('start', start.toString());
+  }
+  if (end !== undefined) {
+    searchParams.append('end', end.toString());
+  }
   
   return lokiRequest(`/api/loki/label/${encodeURIComponent(labelName)}/values?${searchParams.toString()}`);
 }

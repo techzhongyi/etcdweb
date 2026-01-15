@@ -218,12 +218,55 @@ app.use(express.json());
 
 // 获取所有 labels
 app.get('/api/loki/labels', async (req, res) => {
-  await handleLokiApiRequest(req, res, '/loki/api/v1/labels', 'Failed to fetch labels from Loki server');
+  const { url, start, end } = req.query;
+
+  if (!url) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Loki URL is required',
+    });
+  }
+
+  try {
+    // 构建查询参数
+    const searchParams = new URLSearchParams();
+    if (start) {
+      searchParams.append('start', start);
+    }
+    if (end) {
+      searchParams.append('end', end);
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/loki/api/v1/labels${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await fetch(`${url}${endpoint}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({
+        status: 'error',
+        message: errorText || response.statusText,
+      });
+    }
+
+    const data = await response.json();
+    return res.json(data);
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to fetch labels from Loki server',
+    });
+  }
 });
 
 // 获取特定 label 的所有值
 app.get('/api/loki/label/:name/values', async (req, res) => {
   const { name } = req.params;
+  const { url, start, end } = req.query;
 
   if (!name) {
     return res.status(400).json({
@@ -232,8 +275,49 @@ app.get('/api/loki/label/:name/values', async (req, res) => {
     });
   }
 
-  const safeLabelName = encodeURIComponent(name);
-  await handleLokiApiRequest(req, res, `/loki/api/v1/label/${safeLabelName}/values`, `Failed to fetch values for label ${name}`);
+  if (!url) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Loki URL is required',
+    });
+  }
+
+  try {
+    const safeLabelName = encodeURIComponent(name);
+    
+    // 构建查询参数
+    const searchParams = new URLSearchParams();
+    if (start) {
+      searchParams.append('start', start);
+    }
+    if (end) {
+      searchParams.append('end', end);
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = `/loki/api/v1/label/${safeLabelName}/values${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await fetch(`${url}${endpoint}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({
+        status: 'error',
+        message: errorText || response.statusText,
+      });
+    }
+
+    const data = await response.json();
+    return res.json(data);
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: error.message || `Failed to fetch values for label ${name}`,
+    });
+  }
 });
 
 // 查询日志范围

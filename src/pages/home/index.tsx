@@ -142,7 +142,7 @@ const Index: React.FC = () => {
     setIsToolOpen(e)
   }
   // 日志详情
-  const toLogDetail = ( event,organize) => {
+  const toLogDetail = (event, organize) => {
     event.stopPropagation();
     history.push({
       pathname: '/log',
@@ -177,7 +177,7 @@ const Index: React.FC = () => {
           options={envArray}
         />
         {
-          env == 'Dev' && <a style={{ marginLeft: '10px',fontSize: '18px' }} className='content-detail' onClick={() => {
+          env == 'Dev' && <a style={{ marginLeft: '10px', fontSize: '18px' }} className='content-detail' onClick={() => {
             toLog()
           }}>kingyu log</a>
         }
@@ -194,10 +194,17 @@ const Index: React.FC = () => {
                     <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <a className='content-detail' onClick={(e) => {
-                        e.stopPropagation();
-                        history.push('/loki-viewer');
-                      }}>日志查看</a>
+                      {
+                        env != 'Dev' && <a className='content-detail' onClick={(e) => {
+                          e.stopPropagation();
+                          history.push({
+                            pathname: '/loki-viewer',
+                            query: {
+                              env: item.pubip,
+                            },
+                          })
+                        }}>日志查看</a>
+                      }
                       <a className='content-detail' onClick={(e) => {
                         isShowModal(e, true, item);
                       }}>详情</a>

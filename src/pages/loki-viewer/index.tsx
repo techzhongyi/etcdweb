@@ -34,7 +34,7 @@ import {
 import { nanoToDateString, nanoToFormattedDate, dateStringToNano, getDateRange } from '@/utils/lokiDate';
 import { highlightKeyword } from '@/utils/lokiHighlight';
 import styles from './index.less';
-
+import { history, useModel } from 'umi';
 const { TextArea } = Input;
 const { Option } = Select;
 const { Panel } = Collapse;
@@ -63,7 +63,7 @@ const DATE_RANGES = [
 ];
 
 const LokiViewer: React.FC = () => {
-  const [url, setUrl] = useState<string>('http://121.40.237.143:3102');
+  const [url, setUrl] = useState<string>('http://'+history?.location?.query?.env+':3102');
   const [filterQuery, setFilterQuery] = useState<string>('');
   const [filterStart, setFilterStart] = useState<string>(
     moment().subtract(1, 'hour').format('YYYY-MM-DDTHH:mm:ss'),
@@ -95,14 +95,14 @@ const LokiViewer: React.FC = () => {
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
   const [connectionId, setConnectionId] = useState<string | null>(null);
-  
+
   // 用于批量处理日志的缓冲区
   const logBufferRef = React.useRef<Array<[string, string]>>([]);
   const updateTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const logsLengthRef = React.useRef<number>(0);
   const isLiveModeRef = React.useRef<boolean>(false);
   const heartbeatTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-  
+
   // 滚动相关状态
   const userScrolledRef = React.useRef<boolean>(false); // 用户是否手动滚动
   const lastScrollTopRef = React.useRef<number>(0); // 上次滚动位置
@@ -151,15 +151,15 @@ const LokiViewer: React.FC = () => {
         // 如果不是标签格式，可能是用户手动编辑的，不自动更新
         return currentQuery;
       }
-      
+
       // 提取标签部分（花括号内的内容）
       const labelMatch = currentQuery.match(/^\{[^}]*\}/);
       const labelPart = labelMatch ? labelMatch[0] : '';
-      
+
       // 构建新的查询
       const keyword = searchKeyword?.trim() || '';
       let newQuery = labelPart;
-      
+
       if (keyword) {
         if (caseSensitive) {
           // 区分大小写：使用 |= 操作符
@@ -170,7 +170,7 @@ const LokiViewer: React.FC = () => {
           newQuery = `${labelPart} |~ "(?i)${escapedKeyword}"`;
         }
       }
-      
+
       // 只有当查询确实改变时才更新
       return newQuery !== currentQuery ? newQuery : currentQuery;
     });
@@ -180,16 +180,16 @@ const LokiViewer: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollToTop(window.scrollY > 300);
-      
+
       // 实时日志模式下，检测用户是否手动滚动
       if (isLiveMode) {
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const scrollHeight = document.documentElement.scrollHeight;
         const clientHeight = document.documentElement.clientHeight;
-        
+
         // 判断是否滚动到底部（允许10px的误差）
         const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
-        
+
         // 判断是否是用户手动滚动（滚动位置变化且不是程序触发的）
         if (!isScrollingRef.current) {
           const scrollDelta = Math.abs(scrollTop - lastScrollTopRef.current);
@@ -205,11 +205,11 @@ const LokiViewer: React.FC = () => {
             }
           }
         }
-        
+
         lastScrollTopRef.current = scrollTop;
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isLiveMode]);
@@ -252,31 +252,31 @@ const LokiViewer: React.FC = () => {
       if (scrollTimerRef.current) {
         clearTimeout(scrollTimerRef.current);
       }
-      
+
       // 延迟滚动，避免频繁滚动导致卡顿
       scrollTimerRef.current = setTimeout(() => {
         // 再次检查条件，防止在延迟期间状态改变
         if (!isLiveMode || !autoScroll || userScrolledRef.current) {
           return;
         }
-        
+
         // 标记为程序滚动，避免触发用户滚动检测
         isScrollingRef.current = true;
-        
+
         // 滚动到页面底部，确保最新的日志（在表格底部）可见
         const scrollHeight = document.documentElement.scrollHeight;
         window.scrollTo({
           top: scrollHeight,
           behavior: 'smooth',
         });
-        
+
         // 滚动完成后重置标记
         setTimeout(() => {
           isScrollingRef.current = false;
           lastScrollTopRef.current = window.scrollY || document.documentElement.scrollTop;
         }, 300);
       }, 200); // 200ms 防抖，减少滚动频率，提高响应速度
-      
+
       return () => {
         if (scrollTimerRef.current) {
           clearTimeout(scrollTimerRef.current);
@@ -297,7 +297,7 @@ const LokiViewer: React.FC = () => {
     try {
       const response = await getLabels(url);
       console.log('Loki labels 响应:', response);
-      
+
       // 兼容不同的响应格式
       if (response && response.status === 'success' && response.data) {
         // 标准格式：{ status: 'success', data: [...] }
@@ -336,7 +336,7 @@ const LokiViewer: React.FC = () => {
     try {
       const response = await getLabelValues(url, label);
       console.log('Loki label values 响应:', response);
-      
+
       // 兼容不同的响应格式
       let values: string[] = [];
       if (response && response.status === 'success' && response.data) {
@@ -348,7 +348,7 @@ const LokiViewer: React.FC = () => {
       } else if (response && Array.isArray(response.data)) {
         values = response.data;
       }
-      
+
       if (values.length > 0 || (response && response.status === 'success')) {
         setLabelFilters((prevFilters) =>
           prevFilters.map((f) =>
@@ -427,7 +427,7 @@ const LokiViewer: React.FC = () => {
   const handleLabelValueChange = (filterId: string, value: string) => {
     setLabelFilters((prevFilters) => {
       const newFilters = prevFilters.map((f) => (f.id === filterId ? { ...f, value } : f));
-      
+
       // 立即更新查询，使用新的 filters
       const parts = newFilters
         .filter((f) => f.label && f.value)
@@ -435,7 +435,7 @@ const LokiViewer: React.FC = () => {
 
       const newQuery = buildFilterQuery(parts, searchKeyword, caseSensitive);
       setFilterQuery(newQuery);
-      
+
       return newFilters;
     });
   };
@@ -490,11 +490,11 @@ const LokiViewer: React.FC = () => {
   // 停止实时日志
   const stopLiveLogs = () => {
     console.log('[客户端] ========== 开始停止实时日志 ==========');
-    
+
     // 先设置状态和 ref，防止继续处理消息
     setIsLiveMode(false);
     isLiveModeRef.current = false;
-    
+
     // 关闭 EventSource 连接
     if (eventSource) {
       try {
@@ -504,7 +504,7 @@ const LokiViewer: React.FC = () => {
           eventSource.onopen = null;
           eventSource.onmessage = null;
           eventSource.onerror = null;
-          
+
           // 关闭连接
           eventSource.close();
           console.log('[客户端] EventSource 已关闭, readyState:', eventSource.readyState);
@@ -516,14 +516,14 @@ const LokiViewer: React.FC = () => {
       }
       setEventSource(null);
     }
-    
+
     // 停止心跳
     if (heartbeatTimerRef.current) {
       clearInterval(heartbeatTimerRef.current);
       heartbeatTimerRef.current = null;
     }
     setConnectionId(null);
-    
+
     // 清理状态
     setLiveLogsCount(0);
     logBufferRef.current = [];
@@ -545,7 +545,7 @@ const LokiViewer: React.FC = () => {
         },
         body: JSON.stringify({ connectionId: connId }),
       });
-      
+
       if (!response.ok) {
         console.warn(`[客户端] 心跳发送失败 [${connId}]:`, response.status, response.statusText);
       } else {
@@ -588,7 +588,7 @@ const LokiViewer: React.FC = () => {
     lastScrollTopRef.current = 0;
     isScrollingRef.current = false;
     setAutoScroll(true); // 启动时默认开启自动滚动（用户滚动到底部时会自动恢复）
-    
+
     // 启动时立即滚动到底部
     setTimeout(() => {
       isScrollingRef.current = true;
@@ -601,7 +601,7 @@ const LokiViewer: React.FC = () => {
         lastScrollTopRef.current = window.scrollY || document.documentElement.scrollTop;
       }, 500);
     }, 100);
-    
+
     // 清空之前的日志和缓冲区，避免累积过多导致性能问题
     setLogs([]);
     logBufferRef.current = [];
@@ -622,7 +622,7 @@ const LokiViewer: React.FC = () => {
     // 通过代理服务器建立 SSE 连接
     const sseUrl = `/api/loki/tail?${searchParams.toString()}`;
     const es = new EventSource(sseUrl);
-    
+
     // 立即保存 EventSource 引用，以便在停止时能够关闭
     setEventSource(es);
 
@@ -644,7 +644,7 @@ const LokiViewer: React.FC = () => {
         // 关闭操作应该在 stopLiveLogs() 中统一处理
         return;
       }
-      
+
       try {
         // 处理心跳消息（以冒号开头的消息，SSE 注释格式）
         if (event.data.trim().startsWith(':')) {
@@ -653,16 +653,16 @@ const LokiViewer: React.FC = () => {
         }
 
         const data = JSON.parse(event.data);
-        
+
         // 处理连接ID消息，收到后开始发送心跳
         if (data.type === 'connectionId' && data.connectionId) {
           const connId = data.connectionId;
           console.log(`[客户端] 收到连接ID: ${connId}，开始发送心跳`);
           setConnectionId(connId);
-          
+
           // 立即发送一次心跳
           sendHeartbeat(connId);
-          
+
           // 设置定时发送心跳（每10秒）
           if (heartbeatTimerRef.current) {
             clearInterval(heartbeatTimerRef.current);
@@ -680,13 +680,13 @@ const LokiViewer: React.FC = () => {
           }, 10000); // 每10秒发送一次心跳
           return;
         }
-        
+
         // 处理心跳消息（data 格式）
         if (data.type === 'heartbeat') {
           console.log('[客户端] 收到心跳消息:', new Date(data.timestamp).toLocaleTimeString());
           return;
         }
-        
+
         // 处理连接确认消息
         if (data.type === 'connected') {
           console.log('实时日志连接已确认:', data.message);
@@ -716,9 +716,9 @@ const LokiViewer: React.FC = () => {
             console.log('[客户端] isLiveModeRef.current =', isLiveModeRef.current);
             return;
           }
-          
+
           const newLogs: Array<[string, string]> = [];
-          
+
           data.streams.forEach((stream: any) => {
             if (stream.values && Array.isArray(stream.values)) {
               stream.values.forEach((value: [string, string]) => {
@@ -737,27 +737,27 @@ const LokiViewer: React.FC = () => {
             // 将新日志添加到缓冲区
             logBufferRef.current.push(...newLogs);
             setLiveLogsCount((prev) => prev + newLogs.length);
-            
+
             // 如果缓冲区积累的日志较多（超过20条），立即更新，否则使用防抖延迟更新
             // 或者如果当前没有日志（首次显示），立即更新
             const shouldFlushImmediately = logBufferRef.current.length > 20 || logsLengthRef.current === 0;
-            
+
             // 使用防抖批量更新，避免频繁触发状态更新
             if (updateTimerRef.current) {
               clearTimeout(updateTimerRef.current);
               updateTimerRef.current = null;
             }
-            
+
             const flushLogs = () => {
               const logsToAdd = logBufferRef.current;
               logBufferRef.current = [];
-              
+
               if (logsToAdd.length === 0) return;
-              
+
               setLogs((prevLogs) => {
                 // 使用 Map 来快速去重和保持顺序（基于时间戳+消息内容）
                 const logMap = new Map<string, [string, string]>();
-                
+
                 // 先添加现有日志（保持已有顺序）
                 prevLogs.forEach((log) => {
                   const key = `${log[0]}|${log[1]}`;
@@ -765,7 +765,7 @@ const LokiViewer: React.FC = () => {
                     logMap.set(key, log);
                   }
                 });
-                
+
                 // 添加新日志（去重）
                 logsToAdd.forEach((log) => {
                   const key = `${log[0]}|${log[1]}`;
@@ -773,10 +773,10 @@ const LokiViewer: React.FC = () => {
                     logMap.set(key, log);
                   }
                 });
-                
+
                 // 限制日志数量，最多保留 3000 条，防止内存泄漏和性能问题
                 const maxLogs = 3000;
-                
+
                 // 如果日志数量超过限制，先删除最旧的
                 if (logMap.size > maxLogs) {
                   // 转换为数组并排序
@@ -791,10 +791,10 @@ const LokiViewer: React.FC = () => {
                   logsLengthRef.current = result.length;
                   return result;
                 }
-                
+
                 // 转换为数组并排序
                 const allLogs = Array.from(logMap.values());
-                
+
                 // 如果日志数量较少，直接排序
                 if (allLogs.length <= 1000) {
                   allLogs.sort((a, b) => {
@@ -805,7 +805,7 @@ const LokiViewer: React.FC = () => {
                   logsLengthRef.current = allLogs.length;
                   return allLogs;
                 }
-                
+
                 // 如果日志数量较多，使用更高效的排序策略
                 // 由于实时日志通常是按时间顺序到达的，大部分情况下只需要对新日志排序
                 if (prevLogs.length > 0 && logsToAdd.length > 0) {
@@ -815,7 +815,7 @@ const LokiViewer: React.FC = () => {
                     const ts = parseInt(log[0]) || 0;
                     return ts < min ? ts : min;
                   }, Infinity);
-                  
+
                   if (firstNewTimestamp >= lastTimestamp) {
                     // 新日志都在现有日志之后，直接追加（不需要排序）
                     const newLogsSorted = logsToAdd
@@ -833,20 +833,20 @@ const LokiViewer: React.FC = () => {
                     return result;
                   }
                 }
-                
+
                 // 需要完整排序
                 allLogs.sort((a, b) => {
                   const tsA = parseInt(a[0]) || 0;
                   const tsB = parseInt(b[0]) || 0;
                   return tsA - tsB;
                 });
-                
+
                 // 更新日志长度引用
                 logsLengthRef.current = allLogs.length;
                 return allLogs;
               });
             };
-            
+
             // 如果是首次显示，立即更新
             if (shouldFlushImmediately || logsLengthRef.current === 0) {
               // 立即更新，使用 requestAnimationFrame 确保在下一帧渲染
@@ -874,7 +874,7 @@ const LokiViewer: React.FC = () => {
       if (!isLiveModeRef.current) {
         return;
       }
-      
+
       // 检查连接状态
       if (es.readyState === EventSource.CLOSED) {
         setErrorMessage('实时日志连接已断开，请检查：1. 代理服务器是否运行（npm run proxy）2. Loki服务器地址是否正确 3. 网络连接是否正常');
@@ -1027,10 +1027,10 @@ const LokiViewer: React.FC = () => {
   // 表格数据 - 使用 useMemo 缓存，限制显示数量以提高性能
   const tableData = useMemo(() => {
     // 实时模式下，只显示最新的 2000 条日志以提高性能
-    const displayLogs = isLiveMode && filteredLogs.length > 2000 
-      ? filteredLogs.slice(-2000) 
+    const displayLogs = isLiveMode && filteredLogs.length > 2000
+      ? filteredLogs.slice(-2000)
       : filteredLogs;
-    
+
     return displayLogs.map((log, index) => ({
       key: `${log[0]}-${index}`, // 使用时间戳+索引作为key，更稳定
       time: log[0],
@@ -1092,12 +1092,12 @@ const LokiViewer: React.FC = () => {
                       const usedLabels = labelFilters
                         .filter((f) => f.id !== filter.id && f.label)
                         .map((f) => f.label);
-                      
+
                       // 过滤掉已被使用的 labels，但保留当前 filter 自己选中的 label
                       const availableLabels = labels.filter(
                         (label) => !usedLabels.includes(label) || label === filter.label
                       );
-                      
+
                       return (
                       <div key={filter.id} className="label-filter-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '360px', flex: '0 0 auto' }}>
                         <Select
@@ -1184,9 +1184,7 @@ const LokiViewer: React.FC = () => {
                     checked={caseSensitive}
                     onChange={(e) => setCaseSensitive(e.target.checked)}
                     title={caseSensitive ? '当前：区分大小写（点击切换为不区分）' : '当前：不区分大小写（点击切换为区分）'}
-                    style={{
-                      '--antd-wave-shadow-color': '#fbbf24',
-                    } as React.CSSProperties}
+
                   >
                     <span style={{ color: '#d1d5db', fontSize: '14px' }}>区分大小写</span>
                   </Checkbox>
@@ -1269,11 +1267,11 @@ const LokiViewer: React.FC = () => {
                   console.log('[客户端] 按钮被点击, isLiveMode (state) =', isLiveMode);
                   console.log('[客户端] 按钮被点击, isLiveModeRef.current =', isLiveModeRef.current);
                   console.log('[客户端] event:', e);
-                  
+
                   // 使用 ref 来判断，因为 ref 是同步的，不会有时序问题
                   const currentLiveMode = isLiveModeRef.current;
                   console.log('[客户端] 使用 ref 判断, currentLiveMode =', currentLiveMode);
-                  
+
                   if (currentLiveMode) {
                     console.log('[客户端] 准备调用 stopLiveLogs()');
                     try {
@@ -1359,7 +1357,7 @@ const LokiViewer: React.FC = () => {
                   </Button>
                 )}
               </div>
-             
+
             </div>
           }
           className={styles.logsCard}
@@ -1376,8 +1374,8 @@ const LokiViewer: React.FC = () => {
                     showTotal: (total) => `共 ${total} 条`,
                   }
             }
-            scroll={{ 
-              x: 'max-content', 
+            scroll={{
+              x: 'max-content',
               y: isLiveMode ? 600 : undefined,
               scrollToFirstRowOnChange: false // 避免自动滚动导致的性能问题
             }}

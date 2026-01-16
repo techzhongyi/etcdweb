@@ -4,6 +4,9 @@
  * The agent cannot take effect in the production environment
  * so there is no configuration of the production environment
  * For details, please see
+ * 
+ * 注意：Loki 接口已统一使用 /devopsCore/loki/* 路径，通过统一的 request 和 webSocket 工具调用
+ * 不再需要代理配置，所有接口都通过 env.json 中的 devopsCore 地址直接访问
  */
 
 // import globalConstant from "../public/env";
@@ -11,11 +14,8 @@
 export default {
   dev: {
     // 注意：更具体的路径要放在前面，避免被通用路径覆盖
-    '/api/loki': {
-      target: 'http://localhost:3001',
-      changeOrigin: true,
-      pathRewrite: { '^/api/loki': '/api/loki' },
-    },
+    // Loki 接口已统一为 /devopsCore/loki/*，通过统一的 request 和 webSocket 工具调用
+    // 不再需要代理配置，所有接口都通过 env.json 中的 devopsCore 地址直接访问
     '/api/': {
       // target:globalConstant.webSiteDev,
       changeOrigin: true, //是否跨域
@@ -24,11 +24,6 @@ export default {
     },
   },
   test: {
-    '/api/loki': {
-      target: 'http://localhost:3001',
-      changeOrigin: true,
-      pathRewrite: { '^/api/loki': '/api/loki' },
-    },
     '/api/': {
       // target: globalConstant.webSiteTest,
       changeOrigin: true,
@@ -36,11 +31,6 @@ export default {
     },
   },
   pre: {
-    '/api/loki': {
-      target: 'http://localhost:3001',
-      changeOrigin: true,
-      pathRewrite: { '^/api/loki': '/api/loki' },
-    },
     '/api/': {
       // target: globalConstant.webSite,
       changeOrigin: true,

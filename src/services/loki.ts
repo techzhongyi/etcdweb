@@ -1,14 +1,5 @@
-// 使用 umi-request 的原始 request，避免被 etcdweb 的自定义拦截器修改
-import { extend } from 'umi-request';
-
-// 创建一个独立的 request 实例，专门用于 Loki API，不经过 etcdweb 的自定义拦截器
-const lokiRequest = extend({
-  timeout: 30000,
-  errorHandler: (error: any) => {
-    console.error('Loki API 请求错误:', error);
-    throw error;
-  },
-});
+// 使用统一的 request 工具，与其他业务保持一致
+import request from '@/utils/request';
 
 export interface QueryRangeParams {
   url: string;
@@ -41,25 +32,27 @@ export interface LabelValuesResponse {
 
 /**
  * 查询日志范围
- * 通过后端代理 API 调用，避免 CORS 问题
+ * 使用统一的 request 工具，通过 globalConstant 构建 URL
  */
 export async function queryRange(params: QueryRangeParams): Promise<QueryRangeResult> {
   const { url, query, start, end, limit = 5000 } = params;
   
-  const searchParams = new URLSearchParams({
-    url,
-    query,
-    start: start.toString(),
-    end: end.toString(),
-    limit: limit.toString(),
+  return request<QueryRangeResult>('/devopsCore/loki/query_range', {
+    method: 'GET',
+    params: {
+      url,
+      query,
+      start: start.toString(),
+      end: end.toString(),
+      limit: limit.toString(),
+    },
+    b: 'query_range'
   });
-  
-  return lokiRequest(`/api/loki/query_range?${searchParams.toString()}`);
 }
 
 /**
  * 获取所有 labels
- * 通过后端代理 API 调用，避免 CORS 问题
+ * 使用统一的 request 工具，通过 globalConstant 构建 URL
  * @param lokiUrl Loki 服务器地址
  * @param start 开始时间（纳秒时间戳，可选）
  * @param end 结束时间（纳秒时间戳，可选）
@@ -69,24 +62,28 @@ export async function getLabels(
   start?: number,
   end?: number,
 ): Promise<LabelsResponse> {
-  const searchParams = new URLSearchParams({
+  const params: any = {
     url: lokiUrl,
-  });
+  };
   
   // 添加时间范围参数（如果提供）
   if (start !== undefined) {
-    searchParams.append('start', start.toString());
+    params.start = start.toString();
   }
   if (end !== undefined) {
-    searchParams.append('end', end.toString());
+    params.end = end.toString();
   }
   
-  return lokiRequest(`/api/loki/labels?${searchParams.toString()}`);
+  return request<LabelsResponse>('/devopsCore/loki/labels', {
+    method: 'GET',
+    params,
+    b: 'labels',
+  });
 }
 
 /**
  * 获取特定 label 的所有值
- * 通过后端代理 API 调用，避免 CORS 问题
+ * 使用统一的 request 工具，通过 globalConstant 构建 URL
  * @param lokiUrl Loki 服务器地址
  * @param labelName 标签名称
  * @param start 开始时间（纳秒时间戳，可选）
@@ -98,19 +95,24 @@ export async function getLabelValues(
   start?: number,
   end?: number,
 ): Promise<LabelValuesResponse> {
-  const searchParams = new URLSearchParams({
+  const params: any = {
     url: lokiUrl,
-  });
+    name: labelName,
+  };
   
   // 添加时间范围参数（如果提供）
   if (start !== undefined) {
-    searchParams.append('start', start.toString());
+    params.start = start.toString();
   }
   if (end !== undefined) {
-    searchParams.append('end', end.toString());
+    params.end = end.toString();
   }
   
-  return lokiRequest(`/api/loki/label/${encodeURIComponent(labelName)}/values?${searchParams.toString()}`);
+  return request<LabelValuesResponse>('/devopsCore/loki/label/values', {
+    method: 'GET',
+    params,
+    b: 'label_values'
+  });
 }
 
 /**

@@ -3,28 +3,23 @@ import {
   Card,
   Input,
   Button,
-  DatePicker,
   Select,
   Table,
   Space,
   Collapse,
   Row,
   Col,
-  Typography,
   message,
-  Spin,
   Checkbox,
 } from 'antd';
 import {
   PlayCircleOutlined,
-  SaveOutlined,
-  UploadOutlined,
   ReloadOutlined,
   PlusOutlined,
   DeleteOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import moment, { Moment } from 'moment';
+import moment from 'moment';
 import { queryRange, getLabels, getLabelValues, QueryRangeResult } from '@/services/loki';
 import AlertMessage from '@/components/AlertMessage';
 import {
@@ -33,12 +28,12 @@ import {
 } from '@/utils/lokiStorage';
 import { nanoToDateString, nanoToFormattedDate, dateStringToNano, getDateRange } from '@/utils/lokiDate';
 import { highlightKeyword } from '@/utils/lokiHighlight';
+import { webSocket } from '@/utils/socket';
 import styles from './index.less';
-import { history, useModel } from 'umi';
+import { history } from 'umi';
 const { TextArea } = Input;
 const { Option } = Select;
 const { Panel } = Collapse;
-const { Title } = Typography;
 
 interface LabelFilter {
   id: string;
@@ -92,16 +87,17 @@ const LokiViewer: React.FC = () => {
   // 实时日志相关状态
   const [isLiveMode, setIsLiveMode] = useState<boolean>(false);
   const [liveLogsCount, setLiveLogsCount] = useState<number>(0);
-  const [eventSource, setEventSource] = useState<EventSource | null>(null);
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
-  const [connectionId, setConnectionId] = useState<string | null>(null);
+  // connectionId 用于跟踪连接，虽然当前未直接使用，但保留用于调试和未来扩展
+  const [, setConnectionId] = useState<string | null>(null);
 
   // 用于批量处理日志的缓冲区
   const logBufferRef = React.useRef<Array<[string, string]>>([]);
   const updateTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const logsLengthRef = React.useRef<number>(0);
   const isLiveModeRef = React.useRef<boolean>(false);
-  const heartbeatTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const pingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // 滚动相关状态
   const userScrolledRef = React.useRef<boolean>(false); // 用户是否手动滚动
@@ -217,18 +213,19 @@ const LokiViewer: React.FC = () => {
   // 清理实时日志连接和定时器
   useEffect(() => {
     return () => {
-      if (eventSource) {
+      if (websocket) {
         // 检查连接状态，只有在打开或连接中时才关闭
-        if (eventSource.readyState === EventSource.OPEN || eventSource.readyState === EventSource.CONNECTING) {
+        if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
           try {
             // 移除事件监听器
-            eventSource.onopen = null;
-            eventSource.onmessage = null;
-            eventSource.onerror = null;
+            websocket.onopen = null;
+            websocket.onmessage = null;
+            websocket.onerror = null;
+            websocket.onclose = null;
             // 关闭连接
-            eventSource.close();
+            websocket.close();
           } catch (e) {
-            console.error('[客户端] 清理 EventSource 时出错:', e);
+            console.error('[客户端] 清理 WebSocket 时出错:', e);
           }
         }
       }
@@ -236,12 +233,12 @@ const LokiViewer: React.FC = () => {
         clearTimeout(updateTimerRef.current);
         updateTimerRef.current = null;
       }
-      if (heartbeatTimerRef.current) {
-        clearInterval(heartbeatTimerRef.current);
-        heartbeatTimerRef.current = null;
+      if (pingTimerRef.current) {
+        clearInterval(pingTimerRef.current);
+        pingTimerRef.current = null;
       }
     };
-  }, [eventSource]);
+  }, [websocket]);
 
   // 实时日志自动滚动到底部（显示最新日志）- 使用防抖减少滚动频率
   const scrollTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -276,13 +273,14 @@ const LokiViewer: React.FC = () => {
           lastScrollTopRef.current = window.scrollY || document.documentElement.scrollTop;
         }, 300);
       }, 200); // 200ms 防抖，减少滚动频率，提高响应速度
-
-      return () => {
-        if (scrollTimerRef.current) {
-          clearTimeout(scrollTimerRef.current);
-        }
-      };
     }
+
+    // 确保在所有代码路径都返回清理函数
+    return () => {
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current);
+      }
+    };
   }, [logs.length, isLiveMode, autoScroll]); // 只依赖 logs.length，而不是整个 logs 数组
 
   // 获取所有 labels
@@ -312,18 +310,48 @@ const LokiViewer: React.FC = () => {
       console.log('Loki labels 响应:', response);
 
       // 兼容不同的响应格式
-      if (response && response.status === 'success' && response.data) {
-        // 标准格式：{ status: 'success', data: [...] }
-        setLabels(Array.isArray(response.data) ? response.data : []);
-      } else if (response && Array.isArray(response.data)) {
-        // 如果 data 是数组，直接使用
-        setLabels(response.data);
-      } else if (response && response.data && Array.isArray(response.data.data)) {
-        // 嵌套格式：{ status: 'success', data: { data: [...] } }
-        setLabels(response.data.data);
+      // 格式1: { status: 0, data: { data: [...], status: 'success' } }
+      // 格式2: { status: 'success', data: [...] }
+      // 格式3: { status: 'success', data: { data: [...] } }
+      if (response) {
+        let labelsArray: string[] = [];
+        const responseStatus = String(response.status);
+        
+        // 检查外层 status === 0 的情况（Go 服务返回格式）
+        if (responseStatus === '0') {
+          if (response.data && typeof response.data === 'object') {
+            const innerData = (response.data as any);
+            // 检查内层是否有 data 数组
+            if (Array.isArray(innerData.data)) {
+              labelsArray = innerData.data;
+            } else if (Array.isArray(innerData)) {
+              labelsArray = innerData;
+            }
+          }
+        }
+        // 检查标准格式：{ status: 'success', data: [...] }
+        else if (responseStatus === 'success' && response.data) {
+          if (Array.isArray(response.data)) {
+            labelsArray = response.data;
+          } else if (response.data && typeof response.data === 'object' && Array.isArray((response.data as any).data)) {
+            // 嵌套格式：{ status: 'success', data: { data: [...] } }
+            labelsArray = (response.data as any).data;
+          }
+        }
+        // 如果 data 直接是数组
+        else if (Array.isArray(response.data)) {
+          labelsArray = response.data;
+        }
+        
+        if (labelsArray.length > 0) {
+          setLabels(labelsArray);
+        } else {
+          console.error('无法解析 labels 数据，响应格式:', response);
+          setLabelsError(`获取 labels 失败：响应格式错误。响应内容: ${JSON.stringify(response)}`);
+        }
       } else {
-        console.error('未知的响应格式:', response);
-        setLabelsError(`获取 labels 失败：响应格式错误。响应内容: ${JSON.stringify(response)}`);
+        console.error('响应为空:', response);
+        setLabelsError(`获取 labels 失败：响应为空`);
       }
     } catch (error: any) {
       console.error('获取 labels 异常:', error);
@@ -364,18 +392,42 @@ const LokiViewer: React.FC = () => {
       console.log('Loki label values 响应:', response);
 
       // 兼容不同的响应格式
+      // 格式1: { status: 0, data: { data: [...], status: 'success' } }
+      // 格式2: { status: 'success', data: [...] }
+      // 格式3: { status: 'success', data: { data: [...] } }
       let values: string[] = [];
-      if (response && response.status === 'success' && response.data) {
-        if (Array.isArray(response.data)) {
-          values = response.data;
-        } else if (response.data && Array.isArray(response.data.data)) {
-          values = response.data.data;
+      if (response) {
+        const responseStatus = String(response.status);
+        
+        // 检查外层 status === 0 的情况（Go 服务返回格式）
+        if (responseStatus === '0') {
+          if (response.data && typeof response.data === 'object') {
+            const innerData = (response.data as any);
+            // 检查内层是否有 data 数组
+            if (Array.isArray(innerData.data)) {
+              values = innerData.data;
+            } else if (Array.isArray(innerData)) {
+              values = innerData;
+            }
+          }
         }
-      } else if (response && Array.isArray(response.data)) {
-        values = response.data;
+        // 检查标准格式：{ status: 'success', data: [...] }
+        else if (responseStatus === 'success' && response.data) {
+          if (Array.isArray(response.data)) {
+            values = response.data;
+          } else if (response.data && typeof response.data === 'object' && Array.isArray((response.data as any).data)) {
+            // 嵌套格式：{ status: 'success', data: { data: [...] } }
+            values = (response.data as any).data;
+          }
+        }
+        // 如果 data 直接是数组
+        else if (Array.isArray(response.data)) {
+          values = response.data;
+        }
       }
 
-      if (values.length > 0 || (response && response.status === 'success')) {
+      const responseStatus = response ? String(response.status) : '';
+      if (values.length > 0 || (response && (responseStatus === 'success' || responseStatus === '0'))) {
         setLabelFilters((prevFilters) =>
           prevFilters.map((f) =>
             f.id === filterId
@@ -384,7 +436,7 @@ const LokiViewer: React.FC = () => {
           ),
         );
       } else {
-        console.error('未知的响应格式:', response);
+        console.error('无法解析 label values 数据，响应格式:', response);
         setLabelFilters((prevFilters) =>
           prevFilters.map((f) =>
             f.id === filterId
@@ -521,32 +573,33 @@ const LokiViewer: React.FC = () => {
     setIsLiveMode(false);
     isLiveModeRef.current = false;
 
-    // 关闭 EventSource 连接
-    if (eventSource) {
+    // 关闭 WebSocket 连接
+    if (websocket) {
       try {
         // 检查连接状态，只有在打开或连接中时才需要关闭
-        if (eventSource.readyState === EventSource.OPEN || eventSource.readyState === EventSource.CONNECTING) {
+        if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
           // 移除所有事件监听器（防止在关闭过程中触发事件）
-          eventSource.onopen = null;
-          eventSource.onmessage = null;
-          eventSource.onerror = null;
+          websocket.onopen = null;
+          websocket.onmessage = null;
+          websocket.onerror = null;
+          websocket.onclose = null;
 
           // 关闭连接
-          eventSource.close();
-          console.log('[客户端] EventSource 已关闭, readyState:', eventSource.readyState);
+          websocket.close();
+          console.log('[客户端] WebSocket 已关闭, readyState:', websocket.readyState);
         } else {
-          console.log('[客户端] EventSource 已处于关闭状态, readyState:', eventSource.readyState);
+          console.log('[客户端] WebSocket 已处于关闭状态, readyState:', websocket.readyState);
         }
       } catch (e) {
-        console.error('[客户端] 关闭 EventSource 时出错:', e);
+        console.error('[客户端] 关闭 WebSocket 时出错:', e);
       }
-      setEventSource(null);
+      setWebsocket(null);
     }
 
     // 停止心跳
-    if (heartbeatTimerRef.current) {
-      clearInterval(heartbeatTimerRef.current);
-      heartbeatTimerRef.current = null;
+    if (pingTimerRef.current) {
+      clearInterval(pingTimerRef.current);
+      pingTimerRef.current = null;
     }
     setConnectionId(null);
 
@@ -561,32 +614,9 @@ const LokiViewer: React.FC = () => {
     console.log('[客户端] ========== 停止实时日志完成 ==========');
   };
 
-  // 发送心跳
-  const sendHeartbeat = async (connId: string) => {
-    try {
-      const response = await fetch('/api/loki/heartbeat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ connectionId: connId }),
-      });
-
-      if (!response.ok) {
-        console.warn(`[客户端] 心跳发送失败 [${connId}]:`, response.status, response.statusText);
-      } else {
-        const data = await response.json();
-        if (data.status === 'ok') {
-          console.log(`[客户端] 心跳已发送 [${connId}]`);
-        }
-      }
-    } catch (error) {
-      console.error(`[客户端] 发送心跳时出错 [${connId}]:`, error);
-    }
-  };
 
   // 启动实时日志
-  const startLiveLogs = () => {
+  const startLiveLogs = async () => {
     console.log('[客户端] ========== 开始启动实时日志 ==========');
     if (!url || url.length < 1) {
       message.warning('请输入 Loki 服务器地址');
@@ -637,85 +667,68 @@ const LokiViewer: React.FC = () => {
       updateTimerRef.current = null;
     }
 
-    // 构建 SSE URL
+    // 构建 WebSocket 连接参数
     // 实时日志模式下不使用时间条件，始终从当前时间开始获取最新日志
-    const searchParams = new URLSearchParams({
+    const wsParams = {
       url,
       query: filterQuery,
       limit: '50',
-    });
-
-    // 通过代理服务器建立 SSE 连接
-    const sseUrl = `/api/loki/tail?${searchParams.toString()}`;
-    const es = new EventSource(sseUrl);
-
-    // 立即保存 EventSource 引用，以便在停止时能够关闭
-    setEventSource(es);
-
-    es.onopen = () => {
-      console.log('实时日志连接已建立');
-      // 再次检查状态，防止在连接建立前就停止了
-      if (!isLiveModeRef.current) {
-        console.log('实时模式已停止，关闭连接');
-        es.close();
-        return;
-      }
     };
 
-    es.onmessage = (event) => {
+    // 使用统一的 webSocket 工具函数建立连接，与其他业务保持一致
+    // behavior 参数为 'tail'，对应路由配置中的 Behavior
+    const ws = await webSocket('/devopsCore/loki/tail', wsParams);
+    setWebsocket(ws);
+
+    ws.onopen = () => {
+      console.log('[客户端] WebSocket 连接已建立');
+      // 再次检查状态，防止在连接建立前就停止了
+      if (!isLiveModeRef.current) {
+        console.log('[客户端] 实时模式已停止，关闭连接');
+        ws.close();
+        return;
+      }
+      setErrorMessage('');
+
+      // 启动 ping 心跳（每10秒发送一次）
+      if (pingTimerRef.current) {
+        clearInterval(pingTimerRef.current);
+      }
+      pingTimerRef.current = setInterval(() => {
+        if (isLiveModeRef.current && ws.readyState === WebSocket.OPEN) {
+          ws.send('ping');
+          console.log('[客户端] 发送 ping 心跳');
+        } else {
+          // 如果已停止或连接已关闭，清除定时器
+          if (pingTimerRef.current) {
+            clearInterval(pingTimerRef.current);
+            pingTimerRef.current = null;
+          }
+        }
+      }, 10000); // 每10秒发送一次心跳
+    };
+
+    ws.onmessage = (event) => {
       // 如果已经停止实时模式，忽略所有消息
       if (!isLiveModeRef.current) {
-        console.log('[客户端] EventSource 收到消息，但实时模式已停止，忽略消息');
-        // 注意：不要在消息处理函数中调用 close()，这可能导致问题
-        // 关闭操作应该在 stopLiveLogs() 中统一处理
+        console.log('[客户端] WebSocket 收到消息，但实时模式已停止，忽略消息');
         return;
       }
 
       try {
-        // 处理心跳消息（以冒号开头的消息，SSE 注释格式）
-        if (event.data.trim().startsWith(':')) {
-          console.log('[客户端] 收到心跳消息（注释格式）:', event.data.trim());
+        // 处理 pong 心跳响应
+        if (event.data === 'pong') {
+          console.log('[客户端] 收到 pong 心跳响应');
           return;
         }
 
         const data = JSON.parse(event.data);
 
-        // 处理连接ID消息，收到后开始发送心跳
-        if (data.type === 'connectionId' && data.connectionId) {
-          const connId = data.connectionId;
-          console.log(`[客户端] 收到连接ID: ${connId}，开始发送心跳`);
-          setConnectionId(connId);
-
-          // 立即发送一次心跳
-          sendHeartbeat(connId);
-
-          // 设置定时发送心跳（每10秒）
-          if (heartbeatTimerRef.current) {
-            clearInterval(heartbeatTimerRef.current);
-          }
-          heartbeatTimerRef.current = setInterval(() => {
-            if (isLiveModeRef.current && connId) {
-              sendHeartbeat(connId);
-            } else {
-              // 如果已停止，清除定时器
-              if (heartbeatTimerRef.current) {
-                clearInterval(heartbeatTimerRef.current);
-                heartbeatTimerRef.current = null;
-              }
-            }
-          }, 10000); // 每10秒发送一次心跳
-          return;
-        }
-
-        // 处理心跳消息（data 格式）
-        if (data.type === 'heartbeat') {
-          console.log('[客户端] 收到心跳消息:', new Date(data.timestamp).toLocaleTimeString());
-          return;
-        }
-
         // 处理连接确认消息
-        if (data.type === 'connected') {
-          console.log('实时日志连接已确认:', data.message);
+        if (data.type === 'connected' && data.connectionId) {
+          const connId = data.connectionId;
+          console.log(`[客户端] 收到连接ID: ${connId}，连接已确认:`, data.message);
+          setConnectionId(connId);
           setErrorMessage('');
           return;
         }
@@ -739,7 +752,6 @@ const LokiViewer: React.FC = () => {
           // 再次检查状态，防止在处理过程中停止
           if (!isLiveModeRef.current) {
             console.log('[客户端] 收到日志流数据，但实时模式已停止，忽略数据');
-            console.log('[客户端] isLiveModeRef.current =', isLiveModeRef.current);
             return;
           }
 
@@ -894,23 +906,28 @@ const LokiViewer: React.FC = () => {
       }
     };
 
-    es.onerror = (error) => {
-      console.error('实时日志连接错误:', error);
+    ws.onerror = (error) => {
+      console.error('[客户端] WebSocket 连接错误:', error);
       // 如果已经停止，忽略错误
       if (!isLiveModeRef.current) {
         return;
       }
 
-      // 检查连接状态
-      if (es.readyState === EventSource.CLOSED) {
-        setErrorMessage('实时日志连接已断开，请检查：1. 代理服务器是否运行（npm run proxy）2. Loki服务器地址是否正确 3. 网络连接是否正常');
-        stopLiveLogs();
-      } else if (es.readyState === EventSource.CONNECTING) {
-        setErrorMessage('正在连接实时日志服务...');
-      } else {
-        // 不要立即停止，等待服务器发送错误消息或连接超时
-        console.warn('EventSource 连接状态异常，但继续等待...');
+      setErrorMessage('实时日志连接错误，请检查：1. Go 后台服务是否正常运行 2. Loki服务器地址是否正确 3. 网络连接是否正常');
+    };
+
+    ws.onclose = (event) => {
+      console.log('[客户端] WebSocket 连接已关闭:', event.code, event.reason);
+      // 如果已经停止，忽略关闭事件
+      if (!isLiveModeRef.current) {
+        return;
       }
+
+      // 如果不是正常关闭，显示错误信息
+      if (event.code !== 1000) {
+        setErrorMessage('实时日志连接已断开，请检查：1. Go 后台服务是否正常运行 2. Loki服务器地址是否正确 3. 网络连接是否正常');
+      }
+      stopLiveLogs();
     };
   };
 
@@ -956,19 +973,48 @@ const LokiViewer: React.FC = () => {
     setLogs([]);
 
     try {
-      const response: QueryRangeResult = await queryRange(query);
-      if (response.status === 'success' && response.data?.result) {
+      const response: any = await queryRange(query);
+      console.log('Loki query_range 完整响应:', JSON.stringify(response, null, 2));
+      
+      // 兼容不同的响应格式
+      // 格式1: { status: 0, data: { data: { result: [...], resultType: 'streams' }, status: 'success' } }
+      // 格式2: { status: 'success', data: { result: [...], resultType: 'streams' } }
+      // 格式3: { data: { data: { result: [...], resultType: 'streams' } } } (request 工具解析后的格式)
+      let resultData: any = null;
+      
+      // 首先尝试从 data.data.result 提取（Go 服务嵌套格式）
+      if (response?.data?.data?.result !== undefined) {
+        resultData = response.data.data;
+        console.log('使用格式1 (data.data.result):', resultData);
+      }
+      // 其次尝试从 data.result 提取（标准格式）
+      else if (response?.data?.result !== undefined) {
+        resultData = response.data;
+        console.log('使用格式2 (data.result):', resultData);
+      }
+      // 最后尝试直接使用 response.result（如果存在）
+      else if (response?.result !== undefined) {
+        resultData = response;
+        console.log('使用格式3 (result):', resultData);
+      }
+      
+      // 检查 result 是否存在且是数组（即使是空数组也是有效的）
+      if (resultData && resultData.result !== undefined && Array.isArray(resultData.result)) {
         const allLogs: Array<[string, string]> = [];
-        response.data.result.forEach((res) => {
-          res.values.forEach((value) => {
-            // 尝试解析 JSON
-            try {
-              const parsed = JSON.parse(value[1]);
-              allLogs.push([value[0], parsed.log || value[1]]);
-            } catch {
-              allLogs.push(value);
-            }
-          });
+        
+        // 处理每个 stream 的结果
+        resultData.result.forEach((res: any) => {
+          if (res.values && Array.isArray(res.values)) {
+            res.values.forEach((value: [string, string]) => {
+              // 尝试解析 JSON
+              try {
+                const parsed = JSON.parse(value[1]);
+                allLogs.push([value[0], parsed.log || value[1]]);
+              } catch {
+                allLogs.push(value);
+              }
+            });
+          }
         });
 
         // 按时间戳升序排序（旧的在上，新的在下）
@@ -979,8 +1025,17 @@ const LokiViewer: React.FC = () => {
         });
 
         setLogs(allLogs);
+        
+        if (allLogs.length === 0) {
+          message.info('查询成功，但没有找到匹配的日志');
+        }
       } else {
-        setErrorMessage('查询失败：响应格式错误');
+        console.error('无法解析 query_range 数据');
+        console.error('响应对象:', response);
+        console.error('尝试提取的 resultData:', resultData);
+        console.error('resultData.result 类型:', typeof resultData?.result);
+        console.error('resultData.result 是否为数组:', Array.isArray(resultData?.result));
+        setErrorMessage(`查询失败：响应格式错误。响应内容: ${JSON.stringify(response).substring(0, 300)}...`);
       }
     } catch (error: any) {
       setErrorMessage(`查询失败：${error.message || '未知错误'}`);
@@ -989,8 +1044,8 @@ const LokiViewer: React.FC = () => {
     }
   };
 
-  // 保存预设
-  const handleSavePreset = () => {
+  // 保存预设（预留功能，当前未使用）
+  const _handleSavePreset = () => {
     const preset = {
       url,
       query: filterQuery,
@@ -1002,8 +1057,8 @@ const LokiViewer: React.FC = () => {
     message.success('预设已保存');
   };
 
-  // 加载预设
-  const handleLoadPreset = () => {
+  // 加载预设（预留功能，当前未使用）
+  const _handleLoadPreset = () => {
     const preset = getPreset();
     if (!preset) {
       message.warning('没有保存的预设');
@@ -1038,7 +1093,10 @@ const LokiViewer: React.FC = () => {
       dataIndex: 'time',
       key: 'time',
       width: 200,
-      render: (time: string) => nanoToFormattedDate(time),
+      render: (time: string) => {
+        const nanoTime = typeof time === 'string' ? parseFloat(time) : time;
+        return nanoToFormattedDate(nanoTime);
+      },
     },
     {
       title: '消息',
@@ -1209,10 +1267,13 @@ const LokiViewer: React.FC = () => {
                   <Checkbox
                     checked={caseSensitive}
                     onChange={(e) => setCaseSensitive(e.target.checked)}
-                    title={caseSensitive ? '当前：区分大小写（点击切换为不区分）' : '当前：不区分大小写（点击切换为区分）'}
-
                   >
-                    <span style={{ color: '#d1d5db', fontSize: '14px' }}>区分大小写</span>
+                    <span 
+                      style={{ color: '#d1d5db', fontSize: '14px' }}
+                      title={caseSensitive ? '当前：区分大小写（点击切换为不区分）' : '当前：不区分大小写（点击切换为区分）'}
+                    >
+                      区分大小写
+                    </span>
                   </Checkbox>
                 </Space>
               </div>
@@ -1305,7 +1366,7 @@ const LokiViewer: React.FC = () => {
                       console.log('[客户端] stopLiveLogs() 调用完成');
                     } catch (error) {
                       console.error('[客户端] stopLiveLogs() 调用出错:', error);
-                      console.error('[客户端] 错误堆栈:', error.stack);
+                      console.error('[客户端] 错误堆栈:', error instanceof Error ? error.stack : String(error));
                     }
                   } else {
                     console.log('[客户端] 准备调用 startLiveLogs()');
@@ -1314,7 +1375,7 @@ const LokiViewer: React.FC = () => {
                       console.log('[客户端] startLiveLogs() 调用完成');
                     } catch (error) {
                       console.error('[客户端] startLiveLogs() 调用出错:', error);
-                      console.error('[客户端] 错误堆栈:', error.stack);
+                      console.error('[客户端] 错误堆栈:', error instanceof Error ? error.stack : String(error));
                     }
                   }
                   console.log('[客户端] ===== 按钮点击事件结束 =====');

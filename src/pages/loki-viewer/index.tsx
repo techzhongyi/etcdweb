@@ -345,6 +345,30 @@ const LokiViewer: React.FC = () => {
         
         if (labelsArray.length > 0) {
           setLabels(labelsArray);
+          
+          // 自动为 env, organize, service_name 创建 filter 并填充第一个值
+          const autoFillLabels = ['env', 'organize', 'service_name'];
+          const existingLabels = labelsArray.filter(label => autoFillLabels.includes(label));
+          
+          if (existingLabels.length > 0) {
+            // 创建初始 filters，包含需要自动填充的 labels
+            const baseTime = Date.now();
+            const initialFilters: LabelFilter[] = existingLabels.map((label, index) => ({
+              id: `${baseTime}-${index}`,
+              label,
+              value: '',
+              values: [],
+              loading: true,
+            }));
+            
+            setLabelFilters(initialFilters);
+            
+            // 为每个需要自动填充的 label 获取 values 并填充第一个值
+            existingLabels.forEach((label, index) => {
+              const filterId = `${baseTime}-${index}`;
+              autoFetchLabelValuesAndFill(filterId, label);
+            });
+          }
         } else {
           console.error('无法解析 labels 数据，响应格式:', response);
           setLabelsError(`获取 labels 失败：响应格式错误。响应内容: ${JSON.stringify(response)}`);
@@ -358,6 +382,80 @@ const LokiViewer: React.FC = () => {
       setLabelsError(`获取 labels 失败：${error.message || '未知错误'}`);
     } finally {
       setLoadingLabels(false);
+    }
+  };
+
+  // 自动获取 label 的值并填充第一个值（用于自动填充功能）
+  const autoFetchLabelValuesAndFill = async (filterId: string, label: string) => {
+    if (!url || !label || label.length < 1) return;
+
+    try {
+      // 计算时间范围：默认查询最近7天的标签值
+      const now = moment();
+      const startDate = now.clone().subtract(7, 'days');
+      const startNano = startDate.valueOf() * 1000000; // 转换为纳秒时间戳
+      const endNano = now.valueOf() * 1000000; // 转换为纳秒时间戳
+      
+      const response = await getLabelValues(url, label, startNano, endNano);
+      console.log(`自动获取 label "${label}" 的值:`, response);
+
+      // 兼容不同的响应格式
+      let values: string[] = [];
+      if (response) {
+        const responseStatus = String(response.status);
+        
+        if (responseStatus === '0') {
+          if (response.data && typeof response.data === 'object') {
+            const innerData = (response.data as any);
+            if (Array.isArray(innerData.data)) {
+              values = innerData.data;
+            } else if (Array.isArray(innerData)) {
+              values = innerData;
+            }
+          }
+        } else if (responseStatus === 'success' && response.data) {
+          if (Array.isArray(response.data)) {
+            values = response.data;
+          } else if (response.data && typeof response.data === 'object' && Array.isArray((response.data as any).data)) {
+            values = (response.data as any).data;
+          }
+        } else if (Array.isArray(response.data)) {
+          values = response.data;
+        }
+      }
+
+      // 自动填充第一个值
+      const firstValue = values.length > 0 ? values[0] : '';
+      
+      // 更新 filters 并同时更新查询
+      setLabelFilters((prevFilters) => {
+        const newFilters = prevFilters.map((f) =>
+          f.id === filterId
+            ? { ...f, values, value: firstValue, loading: false }
+            : f,
+        );
+        
+        // 如果有值被填充，立即更新查询
+        if (firstValue) {
+          const parts = newFilters
+            .filter((f) => f.label && f.value)
+            .map((f) => `${f.label}="${f.value}"`);
+          
+          const newQuery = buildFilterQuery(parts, searchKeyword, caseSensitive);
+          setFilterQuery(newQuery);
+        }
+        
+        return newFilters;
+      });
+    } catch (error: any) {
+      console.error(`自动获取 label "${label}" 的值异常:`, error);
+      setLabelFilters((prevFilters) =>
+        prevFilters.map((f) =>
+          f.id === filterId
+            ? { ...f, loading: false, error: `获取值失败：${error.message || '未知错误'}` }
+            : f,
+        ),
+      );
     }
   };
 
@@ -488,7 +586,7 @@ const LokiViewer: React.FC = () => {
           .filter((f) => f.label && f.value)
           .map((f) => `${f.label}="${f.value}"`);
 
-        const newQuery = buildFilterQuery(parts, searchKeyword);
+        const newQuery = buildFilterQuery(parts, searchKeyword, caseSensitive);
         setFilterQuery(newQuery);
       }
 
@@ -812,8 +910,8 @@ const LokiViewer: React.FC = () => {
                   }
                 });
 
-                // 限制日志数量，最多保留 3000 条，防止内存泄漏和性能问题
-                const maxLogs = 3000;
+                // 限制日志数量，最多保留 6000 条，防止内存泄漏和性能问题
+                const maxLogs = 6000;
 
                 // 如果日志数量超过限制，先删除最旧的
                 if (logMap.size > maxLogs) {

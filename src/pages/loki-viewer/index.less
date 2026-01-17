@@ -123,12 +123,34 @@
       }
 
       &-selected {
-        background-color: #374151 !important;
+        background-color: #374151 !important; // gray-700
         color: #ffffff !important;
+        
+        // 确保选中项没有白色背景，即使 hover 其他项时也保持深色
+        &::before {
+          display: none !important;
+        }
+        
+        // 选中项在 hover 时也保持深色背景（不能变成白色）
+        &:hover {
+          background-color: #374151 !important; // gray-700，保持选中状态的背景色
+          color: #ffffff !important;
+        }
+        
+        // 选中项即使不在 hover 状态也保持深色背景
+        &:not(:hover) {
+          background-color: #374151 !important; // gray-700
+          color: #ffffff !important;
+        }
       }
 
       &-option-active {
         background-color: #1f2937 !important;
+        
+        // 如果激活项是选中项，保持选中项的深色背景
+        &.ant-select-item-selected {
+          background-color: #374151 !important; // gray-700
+        }
       }
     }
   }
@@ -136,6 +158,9 @@
   // Select 选中值显示
   .ant-select {
     .ant-select-selector {
+      background-color: #111827 !important; // gray-900，去掉白色背景
+      border-color: #4b5563 !important; // gray-600
+      
       .ant-select-selection-item {
         color: #ffffff !important;
         line-height: 32px !important;
@@ -143,6 +168,7 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        background-color: transparent !important; // 确保选中项没有白色背景
       }
 
       .ant-select-selection-placeholder {
@@ -150,17 +176,30 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        color: #6b7280 !important; // gray-500
       }
+    }
+    
+    &:hover .ant-select-selector {
+      border-color: #6b7280 !important; // gray-500
+    }
+    
+    &.ant-select-focused .ant-select-selector {
+      border-color: #9ca3af !important; // gray-400
+      box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2) !important;
     }
 
     &.ant-select-single {
       .ant-select-selector {
+        background-color: #111827 !important; // gray-900，去掉白色背景
+        
         .ant-select-selection-item {
           color: #ffffff !important;
           text-align: center !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
+          background-color: transparent !important; // 确保选中项没有白色背景
         }
 
         .ant-select-selection-placeholder {
@@ -168,18 +207,22 @@
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
+          color: #6b7280 !important; // gray-500
         }
       }
     }
 
     &.ant-select-sm {
       .ant-select-selector {
+        background-color: #111827 !important; // gray-900，去掉白色背景
+        
         .ant-select-selection-item {
           line-height: 24px !important;
           text-align: center !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
+          background-color: transparent !important; // 确保选中项没有白色背景
         }
 
         .ant-select-selection-placeholder {
@@ -187,6 +230,7 @@
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
+          color: #6b7280 !important; // gray-500
         }
       }
     }
@@ -199,6 +243,7 @@
     .ant-table-thead > tr > th {
       background-color: rgba(55, 65, 81, 0.5) !important;
       color: #9ca3af !important;
+      padding: 8px 16px !important; // 减小表头高度
     }
 
     .ant-table-tbody > tr {
@@ -208,7 +253,19 @@
 
       > td {
         color: #ffffff !important;
+        padding: 4px 16px !important; // 减小行高
+        border-bottom: none !important; // 隐藏分割线
       }
+    }
+
+    // 隐藏表格行之间的分割线
+    .ant-table-tbody > tr > td {
+      border-bottom: none !important;
+    }
+
+    // 隐藏表格边框
+    .ant-table-container {
+      border: none !important;
     }
   }
 
@@ -348,6 +405,10 @@
 
     .ant-pagination-jump-prev,
     .ant-pagination-jump-next {
+      .ant-pagination-item-link {
+        color: #11BBAA !important;
+      }
+
       .ant-pagination-item-link-icon {
         color: #11BBAA !important;
       }
@@ -357,6 +418,11 @@
           color: #11BBAA !important;
         }
       }
+    }
+
+    // 省略号（...）样式，统一颜色
+    .ant-pagination-item-ellipsis {
+      color: #11BBAA !important;
     }
 
     .ant-pagination-options {

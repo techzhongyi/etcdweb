@@ -31,6 +31,7 @@ import { highlightKeyword } from '@/utils/lokiHighlight';
 import { webSocket } from '@/utils/socket';
 import styles from './index.less';
 import { history } from 'umi';
+import { getStorage } from '@/utils/storage';
 const { TextArea } = Input;
 const { Option } = Select;
 const { Panel } = Collapse;
@@ -58,7 +59,23 @@ const DATE_RANGES = [
 ];
 
 const LokiViewer: React.FC = () => {
-  const [url, setUrl] = useState<string>('http://'+history?.location?.query?.env+':3102');
+  // 初始化 URL：优先从 URL 参数、localStorage、history query 读取 env
+  const getInitialUrl = (): string => {
+    const params = new URLSearchParams(window.location.search);
+    const urlParam = params.get('url');
+    if (urlParam) return urlParam;
+    
+    const envFromStorage = getStorage('env');
+    const envFromQuery = history?.location?.query?.env as string;
+    const env = envFromQuery || envFromStorage;
+    
+    if (env && env !== 'undefined') {
+      return `http://${env}:3102`;
+    }
+    return '';
+  };
+  
+  const [url, setUrl] = useState<string>(getInitialUrl());
   const [filterQuery, setFilterQuery] = useState<string>('');
   const [filterStart, setFilterStart] = useState<string>(
     moment().subtract(1, 'hour').format('YYYY-MM-DDTHH:mm:ss'),
@@ -83,6 +100,12 @@ const LokiViewer: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [hasExecutedQuery, setHasExecutedQuery] = useState<boolean>(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState<boolean>(false);
+  
+  // 分页相关状态
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 50,
+  });
 
   // 实时日志相关状态
   const [isLiveMode, setIsLiveMode] = useState<boolean>(false);
@@ -98,6 +121,13 @@ const LokiViewer: React.FC = () => {
   const logsLengthRef = React.useRef<number>(0);
   const isLiveModeRef = React.useRef<boolean>(false);
   const pingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const flushLogsRef = React.useRef<(() => void) | null>(null);
+  
+  // 缓冲区最大大小限制（防止内存无限增长）
+  const MAX_BUFFER_SIZE = 5000; // 最大缓冲区大小：5000条
+  const MAX_LOGS_IN_MEMORY = 1000; // 内存中最多保留的日志数：1000条
+  const MAX_DISPLAY_LOGS = 400; // 最多显示的日志数：400条
+  const MAX_PROCESS_AT_ONCE = 80; // 单次最多处理的日志数：80条
 
   // 滚动相关状态
   const userScrolledRef = React.useRef<boolean>(false); // 用户是否手动滚动
@@ -111,7 +141,18 @@ const LokiViewer: React.FC = () => {
   // 从 URL 参数初始化
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('url')) setUrl(params.get('url') || '');
+    if (params.get('url')) {
+      setUrl(params.get('url') || '');
+    } else {
+      // 如果没有 URL 参数，尝试从 localStorage 或 history query 获取 env
+      const envFromStorage = getStorage('env');
+      const envFromQuery = history?.location?.query?.env as string;
+      const env = envFromQuery || envFromStorage;
+      
+      if (env && env !== 'undefined') {
+        setUrl(`http://${env}:3102`);
+      }
+    }
     if (params.get('query')) setFilterQuery(params.get('query') || '');
     if (params.get('start')) {
       setFilterStart(nanoToDateString(Number(params.get('start'))));
@@ -133,7 +174,8 @@ const LokiViewer: React.FC = () => {
 
   // 监听 URL 变化，自动获取 labels
   useEffect(() => {
-    if (url && url.length > 0) {
+    // 验证 URL 是否有效：不能为空、不能包含 undefined、必须是有效的 URL 格式
+    if (url && url.length > 0 && !url.includes('undefined') && url.startsWith('http')) {
       fetchLabels();
     }
   }, [url]);
@@ -285,7 +327,10 @@ const LokiViewer: React.FC = () => {
 
   // 获取所有 labels
   const fetchLabels = async () => {
-    if (!url || url.length < 1) return;
+    // 验证 URL 是否有效：不能为空、不能包含 undefined、必须是有效的 URL 格式
+    if (!url || url.length < 1 || url.includes('undefined') || !url.startsWith('http')) {
+      return;
+    }
 
     setLoadingLabels(true);
     setLabelsError('');
@@ -653,6 +698,178 @@ const LokiViewer: React.FC = () => {
     });
   }, [searchKeyword, caseSensitive, buildFilterQuery]);
 
+  // 生成日志的 key（优化：使用时间戳 + 消息长度 + 消息前50字符的hash，避免长字符串）
+  const generateLogKey = useCallback((timestamp: string, message: string): string => {
+    // 使用时间戳 + 消息长度 + 消息前50字符，减少内存占用
+    const msgLen = message.length;
+    const msgPreview = msgLen > 50 ? message.substring(0, 50) : message;
+    // 使用简单的hash算法，避免存储完整字符串
+    let hash = 0;
+    for (let i = 0; i < msgPreview.length; i++) {
+      const char = msgPreview.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return `${timestamp}|${msgLen}|${hash}`;
+  }, []);
+
+  // 批量处理日志的函数（移出闭包，减少内存引用）
+  const flushLogs = useCallback(() => {
+    try {
+      // 检查缓冲区大小，如果超过限制，丢弃最旧的数据
+      if (logBufferRef.current.length > MAX_BUFFER_SIZE) {
+        console.warn(`[内存保护] 缓冲区溢出，当前大小: ${logBufferRef.current.length}，丢弃最旧的 ${logBufferRef.current.length - MAX_BUFFER_SIZE} 条日志`);
+        logBufferRef.current = logBufferRef.current.slice(-MAX_BUFFER_SIZE);
+      }
+
+      const logsToAdd = logBufferRef.current;
+      logBufferRef.current = [];
+
+      if (logsToAdd.length === 0) return;
+
+      // 限制单次处理数量
+      const logsToProcess = logsToAdd.length > MAX_PROCESS_AT_ONCE
+        ? logsToAdd.slice(-MAX_PROCESS_AT_ONCE)
+        : logsToAdd;
+
+      // 如果还有剩余日志，保留在缓冲区
+      if (logsToAdd.length > MAX_PROCESS_AT_ONCE) {
+        logBufferRef.current = logsToAdd.slice(0, -MAX_PROCESS_AT_ONCE);
+      }
+
+      setLogs((prevLogs) => {
+        try {
+          // 限制日志数量，最多保留 MAX_LOGS_IN_MEMORY 条
+          let workingLogs = prevLogs;
+          if (prevLogs.length >= MAX_LOGS_IN_MEMORY) {
+            // 删除最旧的日志，保留最新的
+            const keepCount = Math.max(0, MAX_LOGS_IN_MEMORY - logsToProcess.length - 200);
+            workingLogs = prevLogs.slice(-keepCount);
+          }
+
+          // 如果现有日志为空，直接处理新日志
+          if (workingLogs.length === 0) {
+            // 去重：使用 Map 代替 Set，更高效
+            const uniqueMap = new Map<string, [string, string]>();
+            
+            logsToProcess.forEach((log) => {
+              const key = generateLogKey(log[0], log[1]);
+              if (!uniqueMap.has(key)) {
+                uniqueMap.set(key, log);
+              }
+            });
+
+            const uniqueNewLogs = Array.from(uniqueMap.values());
+
+            // 排序新日志
+            uniqueNewLogs.sort((a, b) => {
+              const tsA = parseInt(a[0]) || 0;
+              const tsB = parseInt(b[0]) || 0;
+              return tsA - tsB;
+            });
+
+            // 限制数量
+            const result = uniqueNewLogs.length > MAX_LOGS_IN_MEMORY
+              ? uniqueNewLogs.slice(-MAX_LOGS_IN_MEMORY)
+              : uniqueNewLogs;
+
+            logsLengthRef.current = result.length;
+            return result;
+          }
+
+          // 使用 Map 来快速去重（比 Set 更高效）
+          const seenMap = new Map<string, boolean>();
+          const uniqueNewLogs: Array<[string, string]> = [];
+
+          // 只检查最后150条日志的 key，减少内存占用
+          const checkCount = Math.min(150, workingLogs.length);
+          const recentLogs = workingLogs.slice(-checkCount);
+          recentLogs.forEach((log) => {
+            const key = generateLogKey(log[0], log[1]);
+            seenMap.set(key, true);
+          });
+
+          // 添加新日志（去重）
+          logsToProcess.forEach((log) => {
+            const key = generateLogKey(log[0], log[1]);
+            if (!seenMap.has(key)) {
+              seenMap.set(key, true);
+              uniqueNewLogs.push(log);
+            }
+          });
+
+          if (uniqueNewLogs.length === 0) {
+            logsLengthRef.current = workingLogs.length;
+            return workingLogs;
+          }
+
+          // 对新日志排序
+          uniqueNewLogs.sort((a, b) => {
+            const tsA = parseInt(a[0]) || 0;
+            const tsB = parseInt(b[0]) || 0;
+            return tsA - tsB;
+          });
+
+          // 检查新日志是否都在现有日志之后（大部分情况下都是）
+          const lastTimestamp = parseInt(workingLogs[workingLogs.length - 1][0]) || 0;
+          const firstNewTimestamp = parseInt(uniqueNewLogs[0][0]) || 0;
+
+          let result: Array<[string, string]>;
+          if (firstNewTimestamp >= lastTimestamp) {
+            // 新日志都在现有日志之后，直接追加
+            result = workingLogs.concat(uniqueNewLogs);
+          } else {
+            // 需要合并排序，但只对受影响的部分排序
+            let insertIndex = workingLogs.length;
+            for (let i = workingLogs.length - 1; i >= 0; i--) {
+              const ts = parseInt(workingLogs[i][0]) || 0;
+              if (ts <= firstNewTimestamp) {
+                insertIndex = i + 1;
+                break;
+              }
+            }
+
+            // 合并：现有日志的前部分 + 新日志 + 现有日志的后部分
+            result = workingLogs.slice(0, insertIndex)
+              .concat(uniqueNewLogs)
+              .concat(workingLogs.slice(insertIndex));
+
+            // 只对插入区域进行排序
+            const sortStart = Math.max(0, insertIndex - 80);
+            const sortEnd = Math.min(result.length, insertIndex + uniqueNewLogs.length + 80);
+            const toSort = result.slice(sortStart, sortEnd);
+            toSort.sort((a, b) => {
+              const tsA = parseInt(a[0]) || 0;
+              const tsB = parseInt(b[0]) || 0;
+              return tsA - tsB;
+            });
+            result = result.slice(0, sortStart)
+              .concat(toSort)
+              .concat(result.slice(sortEnd));
+          }
+
+          // 如果超过限制，删除最旧的
+          if (result.length > MAX_LOGS_IN_MEMORY) {
+            result = result.slice(-MAX_LOGS_IN_MEMORY);
+          }
+
+          logsLengthRef.current = result.length;
+          return result;
+        } catch (error) {
+          console.error('处理日志时出错:', error);
+          return prevLogs;
+        }
+      });
+    } catch (error) {
+      console.error('flushLogs 执行出错:', error);
+      // 如果出错，清空缓冲区，避免累积
+      logBufferRef.current = [];
+    }
+  }, [generateLogKey]);
+
+  // 将 flushLogs 存储在 ref 中，确保在闭包中可以访问
+  flushLogsRef.current = flushLogs;
+
   // 设置日期范围
   const handleDateRangeChange = (range: string) => {
     setSelectedDateRange(range);
@@ -716,8 +933,9 @@ const LokiViewer: React.FC = () => {
   // 启动实时日志
   const startLiveLogs = async () => {
     console.log('[客户端] ========== 开始启动实时日志 ==========');
-    if (!url || url.length < 1) {
-      message.warning('请输入 Loki 服务器地址');
+    // 验证 URL 是否有效：不能为空、不能包含 undefined、必须是有效的 URL 格式
+    if (!url || url.length < 1 || url.includes('undefined') || !url.startsWith('http')) {
+      message.warning('请输入有效的 Loki 服务器地址');
       return;
     }
     if (!filterQuery || filterQuery.length < 1) {
@@ -870,13 +1088,20 @@ const LokiViewer: React.FC = () => {
           });
 
           if (newLogs.length > 0) {
+            // 检查缓冲区大小，如果接近上限，丢弃最旧的数据
+            if (logBufferRef.current.length + newLogs.length > MAX_BUFFER_SIZE) {
+              const overflow = (logBufferRef.current.length + newLogs.length) - MAX_BUFFER_SIZE;
+              console.warn(`[内存保护] 缓冲区即将溢出，丢弃最旧的 ${overflow} 条日志`);
+              logBufferRef.current = logBufferRef.current.slice(overflow);
+            }
+
             // 将新日志添加到缓冲区
             logBufferRef.current.push(...newLogs);
             setLiveLogsCount((prev) => prev + newLogs.length);
 
-            // 如果缓冲区积累的日志较多（超过20条），立即更新，否则使用防抖延迟更新
+            // 如果缓冲区积累的日志较多（超过120条），立即更新，否则使用防抖延迟更新
             // 或者如果当前没有日志（首次显示），立即更新
-            const shouldFlushImmediately = logBufferRef.current.length > 20 || logsLengthRef.current === 0;
+            const shouldFlushImmediately = logBufferRef.current.length > 120 || logsLengthRef.current === 0;
 
             // 使用防抖批量更新，避免频繁触发状态更新
             if (updateTimerRef.current) {
@@ -884,118 +1109,24 @@ const LokiViewer: React.FC = () => {
               updateTimerRef.current = null;
             }
 
-            const flushLogs = () => {
-              const logsToAdd = logBufferRef.current;
-              logBufferRef.current = [];
-
-              if (logsToAdd.length === 0) return;
-
-              setLogs((prevLogs) => {
-                // 使用 Map 来快速去重和保持顺序（基于时间戳+消息内容）
-                const logMap = new Map<string, [string, string]>();
-
-                // 先添加现有日志（保持已有顺序）
-                prevLogs.forEach((log) => {
-                  const key = `${log[0]}|${log[1]}`;
-                  if (!logMap.has(key)) {
-                    logMap.set(key, log);
-                  }
-                });
-
-                // 添加新日志（去重）
-                logsToAdd.forEach((log) => {
-                  const key = `${log[0]}|${log[1]}`;
-                  if (!logMap.has(key)) {
-                    logMap.set(key, log);
-                  }
-                });
-
-                // 限制日志数量，最多保留 6000 条，防止内存泄漏和性能问题
-                const maxLogs = 6000;
-
-                // 如果日志数量超过限制，先删除最旧的
-                if (logMap.size > maxLogs) {
-                  // 转换为数组并排序
-                  const allLogs = Array.from(logMap.values());
-                  allLogs.sort((a, b) => {
-                    const tsA = parseInt(a[0]) || 0;
-                    const tsB = parseInt(b[0]) || 0;
-                    return tsA - tsB;
-                  });
-                  // 保留最新的日志（删除最旧的）
-                  const result = allLogs.slice(-maxLogs);
-                  logsLengthRef.current = result.length;
-                  return result;
-                }
-
-                // 转换为数组并排序
-                const allLogs = Array.from(logMap.values());
-
-                // 如果日志数量较少，直接排序
-                if (allLogs.length <= 1000) {
-                  allLogs.sort((a, b) => {
-                    const tsA = parseInt(a[0]) || 0;
-                    const tsB = parseInt(b[0]) || 0;
-                    return tsA - tsB;
-                  });
-                  logsLengthRef.current = allLogs.length;
-                  return allLogs;
-                }
-
-                // 如果日志数量较多，使用更高效的排序策略
-                // 由于实时日志通常是按时间顺序到达的，大部分情况下只需要对新日志排序
-                if (prevLogs.length > 0 && logsToAdd.length > 0) {
-                  // 检查现有日志是否已经有序
-                  const lastTimestamp = parseInt(prevLogs[prevLogs.length - 1][0]) || 0;
-                  const firstNewTimestamp = logsToAdd.reduce((min, log) => {
-                    const ts = parseInt(log[0]) || 0;
-                    return ts < min ? ts : min;
-                  }, Infinity);
-
-                  if (firstNewTimestamp >= lastTimestamp) {
-                    // 新日志都在现有日志之后，直接追加（不需要排序）
-                    const newLogsSorted = logsToAdd
-                      .filter(log => {
-                        const key = `${log[0]}|${log[1]}`;
-                        return !logMap.has(key) || logMap.get(key) === log;
-                      })
-                      .sort((a, b) => {
-                        const tsA = parseInt(a[0]) || 0;
-                        const tsB = parseInt(b[0]) || 0;
-                        return tsA - tsB;
-                      });
-                    const result = [...prevLogs, ...newLogsSorted];
-                    logsLengthRef.current = result.length;
-                    return result;
-                  }
-                }
-
-                // 需要完整排序
-                allLogs.sort((a, b) => {
-                  const tsA = parseInt(a[0]) || 0;
-                  const tsB = parseInt(b[0]) || 0;
-                  return tsA - tsB;
-                });
-
-                // 更新日志长度引用
-                logsLengthRef.current = allLogs.length;
-                return allLogs;
-              });
-            };
-
             // 如果是首次显示，立即更新
             if (shouldFlushImmediately || logsLengthRef.current === 0) {
               // 立即更新，使用 requestAnimationFrame 确保在下一帧渲染
-              // 这样可以避免阻塞主线程，同时又能快速显示日志
               requestAnimationFrame(() => {
-                flushLogs();
+                if (isLiveModeRef.current && flushLogsRef.current) {
+                  flushLogsRef.current();
+                }
               });
             } else {
               // 延迟更新，减少更新频率
-              updateTimerRef.current = setTimeout(() => {
-                flushLogs();
-                updateTimerRef.current = null;
-              }, 50); // 50ms 批量更新一次，减少延迟
+              if (!updateTimerRef.current) {
+                updateTimerRef.current = setTimeout(() => {
+                  if (isLiveModeRef.current && flushLogsRef.current) {
+                    flushLogsRef.current();
+                  }
+                  updateTimerRef.current = null;
+                }, 250); // 250ms 批量更新一次
+              }
             }
           }
         }
@@ -1036,8 +1167,9 @@ const LokiViewer: React.FC = () => {
       stopLiveLogs();
     }
 
-    if (!url || url.length < 1) {
-      message.warning('请输入 Loki 服务器地址');
+    // 验证 URL 是否有效：不能为空、不能包含 undefined、必须是有效的 URL 格式
+    if (!url || url.length < 1 || url.includes('undefined') || !url.startsWith('http')) {
+      message.warning('请输入有效的 Loki 服务器地址');
       return;
     }
     if (!filterQuery || filterQuery.length < 1) {
@@ -1178,46 +1310,61 @@ const LokiViewer: React.FC = () => {
   }, [logs]);
 
   // 表格列定义 - 使用 useMemo 缓存
-  const columns = useMemo(() => [
-    {
-      title: '#',
-      dataIndex: 'index',
-      key: 'index',
-      width: 80,
-      render: (_: any, __: any, index: number) => index + 1,
-    },
-    {
-      title: '时间',
-      dataIndex: 'time',
-      key: 'time',
-      width: 200,
-      render: (time: string) => {
-        const nanoTime = typeof time === 'string' ? parseFloat(time) : time;
-        return nanoToFormattedDate(nanoTime);
+  const columns = useMemo(() => {
+    const baseColumns: any[] = [
+      {
+        title: '消息',
+        dataIndex: 'message',
+        key: 'message',
+        render: (msg: string) => {
+          // 实时模式下，如果没有关键词，直接显示文本，避免高亮处理消耗性能
+          if (isLiveMode && !debouncedSearchKeyword) {
+            return <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg}</div>;
+          }
+          return <div dangerouslySetInnerHTML={{ __html: highlightKeyword(msg, debouncedSearchKeyword) }} />;
+        },
       },
-    },
-    {
-      title: '消息',
-      dataIndex: 'message',
-      key: 'message',
-      render: (msg: string) => (
-        <div dangerouslySetInnerHTML={{ __html: highlightKeyword(msg, debouncedSearchKeyword) }} />
-      ),
-    },
-  ], [debouncedSearchKeyword]);
+    ];
+
+    // 非实时模式下显示序号列
+    if (!isLiveMode) {
+      baseColumns.unshift({
+        title: '#',
+        dataIndex: 'index',
+        key: 'index',
+        width: 80,
+        render: (_: any, __: any, index: number) => {
+          // 根据当前页和每页条数计算序号，使切换页数时序号连续
+          return (pagination.current - 1) * pagination.pageSize + index + 1;
+        },
+      });
+    }
+
+    return baseColumns;
+  }, [debouncedSearchKeyword, isLiveMode, pagination.current, pagination.pageSize]);
 
   // 表格数据 - 使用 useMemo 缓存，限制显示数量以提高性能
   const tableData = useMemo(() => {
-    // 实时模式下，只显示最新的 2000 条日志以提高性能
-    const displayLogs = isLiveMode && filteredLogs.length > 2000
-      ? filteredLogs.slice(-2000)
-      : filteredLogs;
+    try {
+      // 实时模式下，只显示最新的 MAX_DISPLAY_LOGS 条日志以提高性能
+      const displayLogs = isLiveMode && filteredLogs.length > MAX_DISPLAY_LOGS
+        ? filteredLogs.slice(-MAX_DISPLAY_LOGS)
+        : filteredLogs;
 
-    return displayLogs.map((log, index) => ({
-      key: `${log[0]}-${index}`, // 使用时间戳+索引作为key，更稳定
-      time: log[0],
-      message: log[1],
-    }));
+      // 限制每次处理的数量，避免一次性创建太多对象
+      const logsToRender = displayLogs.length > MAX_DISPLAY_LOGS 
+        ? displayLogs.slice(-MAX_DISPLAY_LOGS)
+        : displayLogs;
+
+      return logsToRender.map((log, index) => ({
+        key: `${log[0]}-${index}`, // 简化 key，使用时间戳+索引
+        time: log[0],
+        message: log[1],
+      }));
+    } catch (error) {
+      console.error('生成表格数据时出错:', error);
+      return [];
+    }
   }, [filteredLogs, isLiveMode]);
 
   return (
@@ -1554,9 +1701,23 @@ const LokiViewer: React.FC = () => {
               isLiveMode
                 ? false
                 : {
-                    pageSize: 50,
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
                     showSizeChanger: true,
+                    pageSizeOptions: ['20', '50', '100', '200', '500'],
                     showTotal: (total) => `共 ${total} 条`,
+                    onChange: (page, pageSize) => {
+                      setPagination({
+                        current: page,
+                        pageSize: pageSize || pagination.pageSize,
+                      });
+                    },
+                    onShowSizeChange: (current, size) => {
+                      setPagination({
+                        current: 1, // 改变每页条数时重置到第一页
+                        pageSize: size,
+                      });
+                    },
                   }
             }
             scroll={{
@@ -1565,7 +1726,7 @@ const LokiViewer: React.FC = () => {
               scrollToFirstRowOnChange: false // 避免自动滚动导致的性能问题
             }}
             loading={loading && !isLiveMode}
-            size="middle"
+            size="small"
             rowKey="key"
           />
         </Card>

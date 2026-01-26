@@ -1,4 +1,4 @@
-﻿export default [
+export default [
   // 首页  登陆页面
   {
     path: '/user',
@@ -94,6 +94,22 @@
     hideInMenu: true,
     layout: false,
     component: './loki-viewer',
+  },
+  {
+    path: '/apidoc',
+    name: 'API 文档',
+    icon: 'FundProjectionScreenOutlined',
+    hideInMenu: true,
+    layout: false,
+    component: './apidoc',
+  },
+  {
+    path: '/apidoc/detail',
+    name: 'API 文档详情',
+    icon: 'FundProjectionScreenOutlined',
+    hideInMenu: true,
+    layout: false,
+    component: './apidoc/detail',
   },
   {
     path: '/',

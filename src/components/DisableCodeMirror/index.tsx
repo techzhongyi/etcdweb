@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import CodeMirror, { EditorFromTextArea } from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 
@@ -7,6 +7,7 @@ import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/css/css';
 import 'codemirror/mode/htmlmixed/htmlmixed';
+import 'codemirror/mode/yaml/yaml';
 import 'codemirror/theme/material.css'; // 加载的样式主题 https://codemirror.net/5/theme/
 // 代码折叠
 import 'codemirror/addon/fold/foldgutter.css';
@@ -14,7 +15,7 @@ import 'codemirror/addon/fold/foldcode.js';
 import 'codemirror/addon/fold/foldgutter.js';
 import 'codemirror/addon/fold/brace-fold.js';
 import 'codemirror/addon/fold/comment-fold.js';
-import DisabledContext from 'antd/lib/config-provider/DisabledContext';
+import 'codemirror/addon/fold/indent-fold.js';
 // 定义组件属性类型
 interface CodeMirrorEditorProps {
   value: string;
@@ -23,6 +24,7 @@ interface CodeMirrorEditorProps {
   height?: Number;
   width?: Number;
   onChange: (value: string) => void;
+  onReady?: (editor: EditorFromTextArea) => void;
   onShiftEnter?: () => void;
   onBlur?: (value: string) => void;
   onChangeLine?: () => void;
@@ -35,7 +37,7 @@ const DisCodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
 
   // 注册JavaScript代码提示
   const registerHelp = () => {
-    CodeMirror.registerHelper('hint', 'javascript', (editor, options) => {
+    CodeMirror.registerHelper('hint', 'javascript', (editor: any, options: any) => {
       const cursor = editor.getCursor();
       const token = editor.getTokenAt(cursor);
       const word = token.string;
@@ -75,11 +77,13 @@ const DisCodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
       ch: 10, // 初始光标所在行的字符位置
       autoCloseBrackets: true, // 在键入时自动关闭括号和引号
       showCursorWhenSelecting: true, // 当选择处于活动状态时是否应绘制光标。默认为 false。这里设置成自动补全
-      lineWrapping: true, // ，CodeMirror 是否应该滚动或换行。默认为false(滚动)。这里设置成换行
+      lineWrapping: false, // 不自动换行，长行可横向滚动
       lineNumbers: true, // 是否在编辑器左侧显示行号
       fullScreen: true, //当设置为 时true，将使编辑器全屏显示（如占据整个浏览器窗口）。
       mode: language, // 使用模式
       readOnly:true,
+      foldGutter: true,
+      gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
       theme: 'material', // 编辑器样式的主题 必须确保.cm-s-[name] 加载定义相应样式的 CSS 文件。默认值为"default"，颜色包含在 中codemirror.css。可以一次使用多个主题类，例如将和类"foo bar"都分配给编辑器。cm-s-foocm-s-bar
     };
 
@@ -96,6 +100,9 @@ const DisCodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
     editorRef.current.setValue(value || '');
     if (width || height) {
       editorRef.current.setSize(width, height);
+    }
+    if (props.onReady && editorRef.current) {
+      props.onReady(editorRef.current);
     }
   };
 

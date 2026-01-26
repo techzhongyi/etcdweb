@@ -1,0 +1,148 @@
+.api-doc-page {
+  background-image: url(../../../public/icons/homeBg.png);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  width: 100%;
+  height: 100%;
+  overflow: scroll;
+  padding-top: 72px;
+  color: #fff;
+}
+
+.api-doc-content {
+  padding: 20px 100px;
+}
+
+.api-doc-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  > .ant-select,
+  > .ant-input,
+  > .ant-input-affix-wrapper {
+    width: 200px;
+    flex: 0 0 auto;
+  }
+}
+
+.api-doc-body {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - 160px);
+}
+
+.api-doc-panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-doc-panel-subtitle {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.api-doc-version-list {
+  width: 240px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  overflow: auto;
+
+  .ant-list {
+    color: #fff;
+  }
+}
+
+.api-doc-version-item {
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.api-doc-version-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.api-doc-version-item.active {
+  background: rgba(17, 187, 170, 0.2);
+  border: 1px solid rgba(17, 187, 170, 0.8);
+}
+
+.api-doc-doc-list {
+  flex: 1;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.api-doc-doc-header,
+.api-doc-doc-row {
+  display: grid;
+  grid-template-columns: 2.2fr 3fr 1.2fr 1.2fr;
+  gap: 12px;
+  padding: 10px 8px;
+}
+
+.api-doc-doc-header {
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.api-doc-doc-rows {
+  flex: 1;
+  overflow: auto;
+}
+
+.api-doc-doc-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.api-doc-uri-link {
+  color: #11bbaa;
+  cursor: pointer;
+}
+
+.api-doc-uri-link:hover {
+  color: #17cbb7;
+}
+
+.api-doc-doc-row:last-child {
+  border-bottom: none;
+}
+
+.api-doc-empty {
+  padding: 40px 0;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.api-doc-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1920px) {
+  .api-doc-page {
+    padding-top: 54px;
+  }
+  .api-doc-content {
+    padding: 16px 75px;
+  }
+  .api-doc-body {
+    height: calc(100vh - 140px);
+  }
+}

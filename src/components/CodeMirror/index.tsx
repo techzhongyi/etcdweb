@@ -7,6 +7,7 @@ import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/css/css';
 import 'codemirror/mode/htmlmixed/htmlmixed';
+import 'codemirror/mode/yaml/yaml';
 import 'codemirror/theme/material.css'; // 加载的样式主题 https://codemirror.net/5/theme/
 // 代码折叠
 import 'codemirror/addon/fold/foldgutter.css';
@@ -14,6 +15,7 @@ import 'codemirror/addon/fold/foldcode.js';
 import 'codemirror/addon/fold/foldgutter.js';
 import 'codemirror/addon/fold/brace-fold.js';
 import 'codemirror/addon/fold/comment-fold.js';
+import 'codemirror/addon/fold/indent-fold.js';
 // 定义组件属性类型
 interface CodeMirrorEditorProps {
   value: string;
@@ -81,6 +83,8 @@ const CodeMirrorEditorModal: React.FC<CodeMirrorEditorProps> = (props) => {
       fullScreen: true, //当设置为 时true，将使编辑器全屏显示（如占据整个浏览器窗口）。
       mode: language, // 使用模式
       autofous: false, // 禁止自动聚焦
+      foldGutter: true,
+      gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
       theme: 'material', // 编辑器样式的主题 必须确保.cm-s-[name] 加载定义相应样式的 CSS 文件。默认值为"default"，颜色包含在 中codemirror.css。可以一次使用多个主题类，例如将和类"foo bar"都分配给编辑器。cm-s-foocm-s-bar
     };
 

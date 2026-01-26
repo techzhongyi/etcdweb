@@ -141,6 +141,9 @@ const Index: React.FC = () => {
   const tollTipOpen = (e) => {
     setIsToolOpen(e)
   }
+  const openApiDoc = () => {
+    window.open('/apidoc', '_blank', 'noopener,noreferrer');
+  }
   // 日志详情
   const toLogDetail = (event, organize) => {
     event.stopPropagation();
@@ -177,9 +180,16 @@ const Index: React.FC = () => {
           options={envArray}
         />
         {
-          env == 'Dev' && <a style={{ marginLeft: '10px', fontSize: '18px' }} className='content-detail' onClick={() => {
-            toLog()
-          }}>kingyu log</a>
+          env == 'Dev' && (
+            <>
+              <a style={{ marginLeft: '10px', fontSize: '18px' }} className='content-detail' onClick={() => {
+                toLog()
+              }}>kingyu log</a>
+              <a className='content-detail api-doc-link' onClick={openApiDoc}>
+                apidoc
+              </a>
+            </>
+          )
         }
       </div>
       <div>{dataList.length}</div>

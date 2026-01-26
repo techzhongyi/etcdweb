@@ -1,0 +1,106 @@
+.api-doc-detail-page {
+  background-image: url(../../../../public/icons/homeBg.png);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  width: 100%;
+  height: 100%;
+  overflow: scroll;
+  padding-top: 72px;
+  color: #fff;
+}
+
+.api-doc-detail-content {
+  padding: 20px 100px;
+}
+
+.api-doc-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.api-doc-detail-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.api-doc-detail-meta {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  opacity: 0.9;
+}
+
+.api-doc-detail-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.api-doc-detail-search .ant-input-affix-wrapper {
+  width: 300px;
+  flex: 0 0 300px;
+}
+
+.api-doc-detail-search-count {
+  opacity: 0.8;
+  min-width: 64px;
+  text-align: right;
+}
+
+.api-doc-detail-body {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  min-height: 300px;
+}
+
+.api-doc-detail-codemirror {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.api-doc-detail-codemirror .CodeMirror {
+  height: auto;
+  min-height: 300px;
+  font-size: 14px;
+  background: #263238;
+}
+
+.api-doc-detail-codemirror .CodeMirror-gutters {
+  background: #263238;
+}
+
+.api-doc-detail-codemirror .api-doc-detail-search-highlight {
+  background: rgba(255, 214, 0, 0.35);
+}
+
+.api-doc-detail-codemirror .api-doc-detail-search-highlight-active {
+  background: rgba(255, 102, 0, 0.45);
+}
+
+.api-doc-detail-pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  color: #fff;
+}
+
+.api-doc-detail-empty {
+  text-align: center;
+  opacity: 0.7;
+  padding: 40px 0;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1920px) {
+  .api-doc-detail-page {
+    padding-top: 54px;
+  }
+  .api-doc-detail-content {
+    padding: 16px 75px;
+  }
+}

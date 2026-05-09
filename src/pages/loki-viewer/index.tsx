@@ -123,11 +123,13 @@ const LokiViewer: React.FC = () => {
   const isLiveModeRef = React.useRef<boolean>(false);
   const pingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const flushLogsRef = React.useRef<(() => void) | null>(null);
+  const queryAbortRef = React.useRef<AbortController | null>(null);
   
   // 缓冲区最大大小限制（防止内存无限增长）
   const MAX_BUFFER_SIZE = 5000; // 最大缓冲区大小：5000条
   const MAX_LOGS_IN_MEMORY = 1000; // 内存中最多保留的日志数：1000条
-  const MAX_DISPLAY_LOGS = 400; // 最多显示的日志数：400条
+  // 仅实时模式限制表格数据源体量（DOM 压力）；历史查询走分页，应用完整日志列表
+  const MAX_DISPLAY_LOGS = 400;
   const MAX_PROCESS_AT_ONCE = 80; // 单次最多处理的日志数：80条
 
   // 滚动相关状态
@@ -1181,20 +1183,39 @@ const LokiViewer: React.FC = () => {
     const startNano = dateStringToNano(filterStart);
     const endNano = dateStringToNano(filterEnd);
 
-    const query = {
+    const totalRangeNs = Math.max(0, endNano - startNano);
+    const NS_PER_MIN = 60 * 1_000_000_000;
+    const NS_PER_HOUR = 60 * NS_PER_MIN;
+    const NS_PER_DAY = 24 * NS_PER_HOUR;
+
+    // 时间范围越大，单次 query_range 越容易超时；这里按时间窗口分段拉取再合并
+    // 经验值：小于等于 2 小时直接一次查；更大范围按 1h/6h/12h 切片，减少单次压力
+    const chooseChunkNs = (rangeNs: number) => {
+      if (rangeNs <= 2 * NS_PER_HOUR) return rangeNs;
+      if (rangeNs <= 24 * NS_PER_HOUR) return 1 * NS_PER_HOUR;
+      if (rangeNs <= 7 * NS_PER_DAY) return 6 * NS_PER_HOUR;
+      return 12 * NS_PER_HOUR;
+    };
+
+    const chunkNs = chooseChunkNs(totalRangeNs);
+    const shouldChunk = chunkNs > 0 && chunkNs < totalRangeNs;
+
+    // 单次分段 limit，避免单个窗口仍然拉太多导致慢/超时
+    const TOTAL_LIMIT = 5000;
+    const CHUNK_LIMIT = 1000;
+
+    const baseQuery = {
       url,
       query: filterQuery,
-      start: startNano,
-      end: endNano,
-      limit: 5000,
+      limit: TOTAL_LIMIT,
     };
 
     // 更新 URL
     const searchParams = new URLSearchParams({
-      url: query.url,
-      query: query.query,
-      start: query.start.toString(),
-      end: query.end.toString(),
+      url: baseQuery.url,
+      query: baseQuery.query,
+      start: startNano.toString(),
+      end: endNano.toString(),
     }).toString();
     window.history.pushState({}, '', `?${searchParams}`);
 
@@ -1204,40 +1225,29 @@ const LokiViewer: React.FC = () => {
     setLogs([]);
 
     try {
-      const response: any = await queryRange(query);
-      console.log('Loki query_range 完整响应:', JSON.stringify(response, null, 2));
-      
-      // 兼容不同的响应格式
-      // 格式1: { status: 0, data: { data: { result: [...], resultType: 'streams' }, status: 'success' } }
-      // 格式2: { status: 'success', data: { result: [...], resultType: 'streams' } }
-      // 格式3: { data: { data: { result: [...], resultType: 'streams' } } } (request 工具解析后的格式)
-      let resultData: any = null;
-      
-      // 首先尝试从 data.data.result 提取（Go 服务嵌套格式）
-      if (response?.data?.data?.result !== undefined) {
-        resultData = response.data.data;
-        console.log('使用格式1 (data.data.result):', resultData);
+      // 若用户再次点击查询，先中断上一次
+      if (queryAbortRef.current) {
+        queryAbortRef.current.abort();
       }
-      // 其次尝试从 data.result 提取（标准格式）
-      else if (response?.data?.result !== undefined) {
-        resultData = response.data;
-        console.log('使用格式2 (data.result):', resultData);
-      }
-      // 最后尝试直接使用 response.result（如果存在）
-      else if (response?.result !== undefined) {
-        resultData = response;
-        console.log('使用格式3 (result):', resultData);
-      }
-      
-      // 检查 result 是否存在且是数组（即使是空数组也是有效的）
-      if (resultData && resultData.result !== undefined && Array.isArray(resultData.result)) {
+      const controller = new AbortController();
+      queryAbortRef.current = controller;
+
+      const extractLogsFromResponse = (response: any): Array<[string, string]> => {
+        // 兼容不同的响应格式
+        // 格式1: { status: 0, data: { data: { result: [...], resultType: 'streams' }, status: 'success' } }
+        // 格式2: { status: 'success', data: { result: [...], resultType: 'streams' } }
+        // 格式3: { result: [...] }
+        let resultData: any = null;
+        if (response?.data?.data?.result !== undefined) resultData = response.data.data;
+        else if (response?.data?.result !== undefined) resultData = response.data;
+        else if (response?.result !== undefined) resultData = response;
+
+        if (!resultData || !Array.isArray(resultData.result)) return [];
+
         const allLogs: Array<[string, string]> = [];
-        
-        // 处理每个 stream 的结果
         resultData.result.forEach((res: any) => {
           if (res.values && Array.isArray(res.values)) {
             res.values.forEach((value: [string, string]) => {
-              // 尝试解析 JSON
               try {
                 const parsed = JSON.parse(value[1]);
                 allLogs.push([value[0], parsed.log || value[1]]);
@@ -1247,29 +1257,85 @@ const LokiViewer: React.FC = () => {
             });
           }
         });
+        return allLogs;
+      };
 
-        // 按时间戳升序排序（旧的在上，新的在下）
-        allLogs.sort((a, b) => {
+      const mergeAndSortLogs = (all: Array<[string, string]>) => {
+        all.sort((a, b) => {
           const tsA = parseInt(a[0]) || 0;
           const tsB = parseInt(b[0]) || 0;
-          return tsA - tsB; // 升序：时间戳小的在前，大的在后
+          return tsA - tsB;
         });
+        return all;
+      };
 
-        setLogs(allLogs);
-        
-        if (allLogs.length === 0) {
-          message.info('查询成功，但没有找到匹配的日志');
+      const dedupeLogs = (logs: Array<[string, string]>) => {
+        const map = new Map<string, [string, string]>();
+        for (const log of logs) {
+          const key = generateLogKey(log[0], log[1]);
+          if (!map.has(key)) map.set(key, log);
         }
+        return Array.from(map.values());
+      };
+
+      const takeFromRangeStart = (sorted: Array<[string, string]>, warnIfTruncated: boolean) => {
+        const capped = sorted.slice(0, TOTAL_LIMIT);
+        if (warnIfTruncated && sorted.length > TOTAL_LIMIT) {
+          message.warning(
+            `时间范围内日志较多，仅展示最早 ${TOTAL_LIMIT} 条（从所选开始时间往后）。可缩小时间范围分段查询。`,
+          );
+        }
+        return capped;
+      };
+
+      const allLogs: Array<[string, string]> = [];
+
+      if (!shouldChunk) {
+        const response: any = await queryRange({
+          ...baseQuery,
+          start: startNano,
+          end: endNano,
+          limit: TOTAL_LIMIT,
+          direction: 'forward',
+          timeoutMs: 120000,
+          signal: controller.signal,
+        });
+        allLogs.push(...extractLogsFromResponse(response));
       } else {
-        console.error('无法解析 query_range 数据');
-        console.error('响应对象:', response);
-        console.error('尝试提取的 resultData:', resultData);
-        console.error('resultData.result 类型:', typeof resultData?.result);
-        console.error('resultData.result 是否为数组:', Array.isArray(resultData?.result));
-        setErrorMessage(`查询失败：响应格式错误。响应内容: ${JSON.stringify(response).substring(0, 300)}...`);
+        message.info(`时间范围较大（约 ${Math.ceil(totalRangeNs / NS_PER_HOUR)} 小时），已启用分段查询以减少超时`);
+        let windowStart = startNano;
+        while (windowStart < endNano) {
+          if (controller.signal.aborted) {
+            throw new Error('查询已取消');
+          }
+          const windowEnd = Math.min(endNano, windowStart + chunkNs);
+          const response: any = await queryRange({
+            ...baseQuery,
+            start: windowStart,
+            end: windowEnd,
+            limit: CHUNK_LIMIT,
+            direction: 'forward',
+            timeoutMs: 120000,
+            signal: controller.signal,
+          });
+          const chunkLogs = extractLogsFromResponse(response);
+          if (chunkLogs.length > 0) {
+            allLogs.push(...chunkLogs);
+            // 增量展示：按时间从旧到新截断，避免只显示区间末尾（backward + slice(-N) 的问题）
+            setLogs(takeFromRangeStart(mergeAndSortLogs(dedupeLogs([...allLogs])), false));
+          }
+          windowStart = windowEnd;
+        }
+      }
+
+      const finalLogs = takeFromRangeStart(mergeAndSortLogs(dedupeLogs(allLogs)), true);
+      setLogs(finalLogs);
+      if (finalLogs.length === 0) {
+        message.info('查询成功，但没有找到匹配的日志');
       }
     } catch (error: any) {
-      setErrorMessage(`查询失败：${error.message || '未知错误'}`);
+      const msg = error?.name === 'AbortError' ? '查询已取消' : (error.message || '未知错误');
+      setErrorMessage(`查询失败：${msg}`);
     } finally {
       setLoading(false);
     }
@@ -1344,18 +1410,13 @@ const LokiViewer: React.FC = () => {
     return baseColumns;
   }, [debouncedSearchKeyword, isLiveMode, pagination.current, pagination.pageSize]);
 
-  // 表格数据 - 使用 useMemo 缓存，限制显示数量以提高性能
+  // 表格数据：实时模式截断以减轻渲染；历史查询不截断（否则会只剩最后 400 条，分页失效）
   const tableData = useMemo(() => {
     try {
-      // 实时模式下，只显示最新的 MAX_DISPLAY_LOGS 条日志以提高性能
-      const displayLogs = isLiveMode && filteredLogs.length > MAX_DISPLAY_LOGS
-        ? filteredLogs.slice(-MAX_DISPLAY_LOGS)
-        : filteredLogs;
-
-      // 限制每次处理的数量，避免一次性创建太多对象
-      const logsToRender = displayLogs.length > MAX_DISPLAY_LOGS 
-        ? displayLogs.slice(-MAX_DISPLAY_LOGS)
-        : displayLogs;
+      const logsToRender =
+        isLiveMode && filteredLogs.length > MAX_DISPLAY_LOGS
+          ? filteredLogs.slice(-MAX_DISPLAY_LOGS)
+          : filteredLogs;
 
       return logsToRender.map((log, index) => ({
         key: `${log[0]}-${index}`, // 简化 key，使用时间戳+索引

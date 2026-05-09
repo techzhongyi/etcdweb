@@ -8,10 +8,19 @@ export interface QueryRangeParams {
   end: number;
   limit?: number;
   /**
+   * Loki query_range 的 direction：backward（默认）为从新到旧，limit 往往落在时间范围末尾；
+   * forward 为从旧到新，更符合「从所选开始时间往后看」的预期。
+   */
+  direction?: 'forward' | 'backward';
+  /**
    * 单次查询超时（毫秒）。
    * 日志量大时 Loki/网关响应可能较慢，避免复用全局 5s 超时。
    */
   timeoutMs?: number;
+  /**
+   * 用于中断查询（例如用户再次点击查询）。
+   */
+  signal?: AbortSignal;
 }
 
 export interface QueryRangeResult {
@@ -40,7 +49,16 @@ export interface LabelValuesResponse {
  * 使用统一的 request 工具，通过 globalConstant 构建 URL
  */
 export async function queryRange(params: QueryRangeParams): Promise<QueryRangeResult> {
-  const { url, query, start, end, limit = 5000, timeoutMs = 120000 } = params;
+  const {
+    url,
+    query,
+    start,
+    end,
+    limit = 5000,
+    direction = 'forward',
+    timeoutMs = 120000,
+    signal,
+  } = params;
   
   return request<QueryRangeResult>('/devopsCore/loki/query_range', {
     method: 'GET',
@@ -50,8 +68,10 @@ export async function queryRange(params: QueryRangeParams): Promise<QueryRangeRe
       start: start.toString(),
       end: end.toString(),
       limit: limit.toString(),
+      direction,
     },
     timeout: timeoutMs,
+    signal,
     b: 'query_range'
   });
 }

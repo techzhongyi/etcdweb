@@ -7,6 +7,11 @@ export interface QueryRangeParams {
   start: number;
   end: number;
   limit?: number;
+  /**
+   * 单次查询超时（毫秒）。
+   * 日志量大时 Loki/网关响应可能较慢，避免复用全局 5s 超时。
+   */
+  timeoutMs?: number;
 }
 
 export interface QueryRangeResult {
@@ -35,7 +40,7 @@ export interface LabelValuesResponse {
  * 使用统一的 request 工具，通过 globalConstant 构建 URL
  */
 export async function queryRange(params: QueryRangeParams): Promise<QueryRangeResult> {
-  const { url, query, start, end, limit = 5000 } = params;
+  const { url, query, start, end, limit = 5000, timeoutMs = 120000 } = params;
   
   return request<QueryRangeResult>('/devopsCore/loki/query_range', {
     method: 'GET',
@@ -46,6 +51,7 @@ export async function queryRange(params: QueryRangeParams): Promise<QueryRangeRe
       end: end.toString(),
       limit: limit.toString(),
     },
+    timeout: timeoutMs,
     b: 'query_range'
   });
 }

@@ -32,6 +32,7 @@ import { webSocket } from '@/utils/socket';
 import styles from './index.less';
 import { history } from 'umi';
 import { getStorage } from '@/utils/storage';
+import EtdcHeader from '@/components/NewHeader';
 const { TextArea } = Input;
 const { Option } = Select;
 const { Panel } = Collapse;
@@ -1368,8 +1369,10 @@ const LokiViewer: React.FC = () => {
   }, [filteredLogs, isLiveMode]);
 
   return (
-    <div className={styles.container}>
-      <Card
+    <>
+      <EtdcHeader />
+      <div className={styles.container}>
+        <Card
         title={
           <div className={styles.cardHeader}>
             <span>查询过滤器</span>
@@ -1742,7 +1745,8 @@ const LokiViewer: React.FC = () => {
           className={styles.scrollToTop}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

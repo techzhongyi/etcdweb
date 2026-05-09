@@ -1,7 +1,21 @@
 .container {
   padding: 24px;
+  padding-top: 96px; // 为固定标题栏留出空间（72px标题栏高度 + 24px间距）
   min-height: 100vh;
   background: #111827; // gray-900
+}
+
+// 响应式调整：适配不同屏幕尺寸的标题栏高度
+@media screen and (min-width: 1920px) {
+  .container {
+    padding-top: 96px; // 72px标题栏 + 24px间距
+  }
+}
+
+@media screen and (min-width: 768px) and (max-width: 1920px) {
+  .container {
+    padding-top: 78px; // 54px标题栏 + 24px间距
+  }
 }
 
 .header {

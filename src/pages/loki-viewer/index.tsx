@@ -110,6 +110,11 @@ const LokiViewer: React.FC = () => {
 
   // 实时日志相关状态
   const [isLiveMode, setIsLiveMode] = useState<boolean>(false);
+  /**
+   * 表格展示模式：与 isLiveMode 解耦，避免「执行查询」写入大量日志时 isLiveMode 仍为 true（setState 异步）
+   * 导致 tableData 误走实时模式的 slice(-400)，生产环境更易复现。
+   */
+  const [logsTableMode, setLogsTableMode] = useState<'full' | 'liveCompact'>('full');
   const [liveLogsCount, setLiveLogsCount] = useState<number>(0);
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
@@ -890,6 +895,7 @@ const LokiViewer: React.FC = () => {
     // 先设置状态和 ref，防止继续处理消息
     setIsLiveMode(false);
     isLiveModeRef.current = false;
+    setLogsTableMode('full');
 
     // 关闭 WebSocket 连接
     if (websocket) {
@@ -950,6 +956,8 @@ const LokiViewer: React.FC = () => {
     console.log('[客户端] startLiveLogs: 准备停止之前的连接');
     stopLiveLogs();
     console.log('[客户端] startLiveLogs: 停止之前的连接完成');
+
+    setLogsTableMode('liveCompact');
 
     // 先更新 ref，再更新 state（ref 是同步的）
     isLiveModeRef.current = true;
@@ -1165,6 +1173,9 @@ const LokiViewer: React.FC = () => {
 
   // 执行查询
   const runQuery = async () => {
+    // 必须先切到完整表格模式，再停实时；否则本轮查询结果可能在「isLiveMode 仍为 true」的一帧里被 slice(-400)
+    setLogsTableMode('full');
+
     // 如果正在实时模式，先停止
     if (isLiveMode) {
       stopLiveLogs();
@@ -1410,16 +1421,22 @@ const LokiViewer: React.FC = () => {
     return baseColumns;
   }, [debouncedSearchKeyword, isLiveMode, pagination.current, pagination.pageSize]);
 
-  // 表格数据：实时模式截断以减轻渲染；历史查询不截断（否则会只剩最后 400 条，分页失效）
+  // 表格数据：hist/full 用完整列表（分页）；liveCompact 截断，减轻 DOM（勿用 isLiveMode，避免与查询竞态）
   const tableData = useMemo(() => {
     try {
+      if (logsTableMode === 'full') {
+        return filteredLogs.map((log, index) => ({
+          key: `${log[0]}-${index}`,
+          time: log[0],
+          message: log[1],
+        }));
+      }
       const logsToRender =
-        isLiveMode && filteredLogs.length > MAX_DISPLAY_LOGS
+        filteredLogs.length > MAX_DISPLAY_LOGS
           ? filteredLogs.slice(-MAX_DISPLAY_LOGS)
           : filteredLogs;
-
       return logsToRender.map((log, index) => ({
-        key: `${log[0]}-${index}`, // 简化 key，使用时间戳+索引
+        key: `${log[0]}-${index}`,
         time: log[0],
         message: log[1],
       }));
@@ -1427,7 +1444,7 @@ const LokiViewer: React.FC = () => {
       console.error('生成表格数据时出错:', error);
       return [];
     }
-  }, [filteredLogs, isLiveMode]);
+  }, [filteredLogs, logsTableMode]);
 
   return (
     <>

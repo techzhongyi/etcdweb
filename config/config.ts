@@ -8,7 +8,8 @@ import routes from './routes';
 // const { REACT_APP_ENV } = process.env;
 
 export default defineConfig({
-  hash: false,
+  // 文件名带内容哈希，避免 npm run build 发布后浏览器/CDN 仍缓存旧的 umi.js 片段（曾导致线上仍为「非实时只显示 400 条」的旧逻辑）
+  hash: true,
   outputPath: 'dist',
   antd: {},
   dva: {

@@ -68,7 +68,7 @@ export async function queryRange(params: QueryRangeParams): Promise<QueryRangeRe
       start: start.toString(),
       end: end.toString(),
       limit: limit.toString(),
-      direction,
+      direction: String(direction),
     },
     timeout: timeoutMs,
     signal,

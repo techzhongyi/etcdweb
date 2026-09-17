@@ -54,7 +54,7 @@ export async function queryRange(params: QueryRangeParams): Promise<QueryRangeRe
     query,
     start,
     end,
-    limit = 5000,
+    limit = 10000,
     direction = 'forward',
     timeoutMs = 120000,
     signal,

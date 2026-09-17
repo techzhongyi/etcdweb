@@ -204,17 +204,18 @@ const Index: React.FC = () => {
                     <div>CPU:{item.health.cpuusage.toFixed(2)}%,MEM:{item.health.memusage.toFixed(2)}%,IO:{item.health.diskio.toFixed(2)}%</div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {
-                        env != 'Dev' && <a className='content-detail' onClick={(e) => {
-                          e.stopPropagation();
-                          history.push({
-                            pathname: '/loki-viewer',
-                            query: {
-                              env: item.pubip,
-                            },
-                          })
-                        }}>日志查看</a>
-                      }
+                      <a className='content-detail' onClick={(e) => {
+                        e.stopPropagation();
+                        const lokiHost = [item.pubip, item.ip].find(
+                          (host) => host && !['Dev', 'Test', 'Prod'].includes(host),
+                        );
+                        history.push({
+                          pathname: '/loki-viewer',
+                          query: {
+                            env: lokiHost,
+                          },
+                        })
+                      }}>日志查看</a>
                       <a className='content-detail' onClick={(e) => {
                         isShowModal(e, true, item);
                       }}>详情</a>

@@ -31,7 +31,6 @@ import { highlightKeyword } from '@/utils/lokiHighlight';
 import { webSocket } from '@/utils/socket';
 import styles from './index.less';
 import { history } from 'umi';
-import { getStorage } from '@/utils/storage';
 import EtdcHeader from '@/components/NewHeader';
 const { TextArea } = Input;
 const { Option } = Select;
@@ -59,22 +58,29 @@ const DATE_RANGES = [
   { value: 'this_year', label: '今年（1月-今天）' },
 ];
 
+const LOKI_ENV_NAMES = new Set(['Dev', 'Test', 'Prod']);
+
+const resolveLokiServerHost = (): string => {
+  const params = new URLSearchParams(window.location.search);
+  const hostFromQuery = params.get('env') || (history?.location?.query?.env as string);
+  if (hostFromQuery && hostFromQuery !== 'undefined' && !LOKI_ENV_NAMES.has(hostFromQuery)) {
+    return hostFromQuery;
+  }
+  return '';
+};
+
+const resolveLokiServerUrl = (): string => {
+  const params = new URLSearchParams(window.location.search);
+  const urlParam = params.get('url');
+  if (urlParam) return urlParam;
+
+  const host = resolveLokiServerHost();
+  return host ? `http://${host}:3102` : '';
+};
+
 const LokiViewer: React.FC = () => {
-  // 初始化 URL：优先从 URL 参数、localStorage、history query 读取 env
-  const getInitialUrl = (): string => {
-    const params = new URLSearchParams(window.location.search);
-    const urlParam = params.get('url');
-    if (urlParam) return urlParam;
-    
-    const envFromStorage = getStorage('env');
-    const envFromQuery = history?.location?.query?.env as string;
-    const env = envFromQuery || envFromStorage;
-    
-    if (env && env !== 'undefined') {
-      return `http://${env}:3102`;
-    }
-    return '';
-  };
+  // 初始化 URL：优先从 URL 参数、history query 读取 Loki 主机地址
+  const getInitialUrl = (): string => resolveLokiServerUrl();
   
   const [url, setUrl] = useState<string>(getInitialUrl());
   const [filterQuery, setFilterQuery] = useState<string>('');
@@ -94,6 +100,11 @@ const LokiViewer: React.FC = () => {
   ]);
   const [loadingLabels, setLoadingLabels] = useState<boolean>(false);
   const [labelsError, setLabelsError] = useState<string>('');
+  const [labelsDateRange, setLabelsDateRange] = useState<string>('last_7_days');
+  const [labelsStart, setLabelsStart] = useState<string>(
+    moment().subtract(7, 'days').format('YYYY-MM-DDTHH:mm:ss'),
+  );
+  const [labelsEnd, setLabelsEnd] = useState<string>(moment().format('YYYY-MM-DDTHH:mm:ss'));
 
   // 日志相关状态
   const [logs, setLogs] = useState<Array<[string, string]>>([]);
@@ -152,13 +163,9 @@ const LokiViewer: React.FC = () => {
     if (params.get('url')) {
       setUrl(params.get('url') || '');
     } else {
-      // 如果没有 URL 参数，尝试从 localStorage 或 history query 获取 env
-      const envFromStorage = getStorage('env');
-      const envFromQuery = history?.location?.query?.env as string;
-      const env = envFromQuery || envFromStorage;
-      
-      if (env && env !== 'undefined') {
-        setUrl(`http://${env}:3102`);
+      const lokiUrl = resolveLokiServerUrl();
+      if (lokiUrl) {
+        setUrl(lokiUrl);
       }
     }
     if (params.get('query')) setFilterQuery(params.get('query') || '');
@@ -333,6 +340,22 @@ const LokiViewer: React.FC = () => {
     };
   }, [logs.length, isLiveMode, autoScroll]); // 只依赖 logs.length，而不是整个 logs 数组
 
+  const getLabelsNanoRange = useCallback(() => {
+    return {
+      startNano: dateStringToNano(labelsStart),
+      endNano: dateStringToNano(labelsEnd),
+    };
+  }, [labelsStart, labelsEnd]);
+
+  const handleLabelsDateRangeChange = (range: string) => {
+    setLabelsDateRange(range);
+    if (range === 'custom') return;
+
+    const { start, end } = getDateRange(range);
+    setLabelsStart(moment(start).format('YYYY-MM-DDTHH:mm:ss'));
+    setLabelsEnd(moment(end).format('YYYY-MM-DDTHH:mm:ss'));
+  };
+
   // 获取所有 labels
   const fetchLabels = async () => {
     // 验证 URL 是否有效：不能为空、不能包含 undefined、必须是有效的 URL 格式
@@ -346,19 +369,15 @@ const LokiViewer: React.FC = () => {
     setLabelFilters([{ id: Date.now().toString(), label: '', value: '', values: [], loading: false }]);
 
     try {
-      // 计算时间范围：默认查询最近7天的标签
-      const now = moment();
-      const startDate = now.clone().subtract(7, 'days');
-      const startNano = startDate.valueOf() * 1000000; // 转换为纳秒时间戳
-      const endNano = now.valueOf() * 1000000; // 转换为纳秒时间戳
-      
+      const { startNano, endNano } = getLabelsNanoRange();
+
       console.log('查询 labels 时间范围:', {
-        start: startDate.format('YYYY-MM-DD HH:mm:ss'),
-        end: now.format('YYYY-MM-DD HH:mm:ss'),
+        start: labelsStart,
+        end: labelsEnd,
         startNano,
         endNano,
       });
-      
+
       const response = await getLabels(url, startNano, endNano);
       console.log('Loki labels 响应:', response);
 
@@ -443,12 +462,8 @@ const LokiViewer: React.FC = () => {
     if (!url || !label || label.length < 1) return;
 
     try {
-      // 计算时间范围：默认查询最近7天的标签值
-      const now = moment();
-      const startDate = now.clone().subtract(7, 'days');
-      const startNano = startDate.valueOf() * 1000000; // 转换为纳秒时间戳
-      const endNano = now.valueOf() * 1000000; // 转换为纳秒时间戳
-      
+      const { startNano, endNano } = getLabelsNanoRange();
+
       const response = await getLabelValues(url, label, startNano, endNano);
       console.log(`自动获取 label "${label}" 的值:`, response);
 
@@ -526,19 +541,15 @@ const LokiViewer: React.FC = () => {
     );
 
     try {
-      // 计算时间范围：默认查询最近7天的标签值
-      const now = moment();
-      const startDate = now.clone().subtract(7, 'days');
-      const startNano = startDate.valueOf() * 1000000; // 转换为纳秒时间戳
-      const endNano = now.valueOf() * 1000000; // 转换为纳秒时间戳
-      
+      const { startNano, endNano } = getLabelsNanoRange();
+
       console.log(`查询 label "${label}" 的值，时间范围:`, {
-        start: startDate.format('YYYY-MM-DD HH:mm:ss'),
-        end: now.format('YYYY-MM-DD HH:mm:ss'),
+        start: labelsStart,
+        end: labelsEnd,
         startNano,
         endNano,
       });
-      
+
       const response = await getLabelValues(url, label, startNano, endNano);
       console.log('Loki label values 响应:', response);
 
@@ -1212,7 +1223,7 @@ const LokiViewer: React.FC = () => {
     const shouldChunk = chunkNs > 0 && chunkNs < totalRangeNs;
 
     // 单次分段 limit，避免单个窗口仍然拉太多导致慢/超时
-    const TOTAL_LIMIT = 5000;
+    const TOTAL_LIMIT = 10000;
     const CHUNK_LIMIT = 1000;
 
     const baseQuery = {
@@ -1359,7 +1370,7 @@ const LokiViewer: React.FC = () => {
       query: filterQuery,
       start: dateStringToNano(filterStart),
       end: dateStringToNano(filterEnd),
-      limit: 5000,
+      limit: 10000,
     };
     savePreset(preset);
     message.success('预设已保存');
@@ -1469,21 +1480,67 @@ const LokiViewer: React.FC = () => {
               {/* Server URL */}
               <div style={{ marginTop: '-8px' }}>
                 <label className={styles.label}>服务器地址</label>
-                <Space>
-                  <Input
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://your-loki-server.com"
-                    style={{ width: 400 }}
-                  />
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={fetchLabels}
-                    loading={loadingLabels}
-                    disabled={!url || url.length < 1}
-                  >
-                    刷新 Labels
-                  </Button>
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Space wrap>
+                    <Input
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://your-loki-server.com"
+                      style={{ width: 400 }}
+                    />
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={fetchLabels}
+                      loading={loadingLabels}
+                      disabled={!url || url.length < 1}
+                    >
+                      刷新 Labels
+                    </Button>
+                  </Space>
+                  <Row gutter={16} align="bottom">
+                    <Col span={6}>
+                      <label className={styles.label}>Labels 时间范围</label>
+                      <Select
+                        value={labelsDateRange}
+                        onChange={handleLabelsDateRangeChange}
+                        style={{ width: '100%' }}
+                        className="date-range-select"
+                        getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                      >
+                        {DATE_RANGES.map((range) => (
+                          <Option key={range.value} value={range.value}>
+                            {range.label}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Col>
+                    <Col span={9}>
+                      <label className={styles.label}>开始时间</label>
+                      <Input
+                        type="datetime-local"
+                        value={labelsStart}
+                        onChange={(e) => {
+                          setLabelsStart(e.target.value);
+                          setLabelsDateRange('custom');
+                        }}
+                        className="date-input"
+                        style={{ width: '100%' }}
+                      />
+                    </Col>
+                    <Col span={9}>
+                      <label className={styles.label}>结束时间</label>
+                      <Input
+                        type="datetime-local"
+                        value={labelsEnd}
+                        onChange={(e) => {
+                          setLabelsEnd(e.target.value);
+                          setLabelsDateRange('custom');
+                        }}
+                        className="date-input"
+                        style={{ width: '100%' }}
+                      />
+                    </Col>
+                  </Row>
                 </Space>
               </div>
 
